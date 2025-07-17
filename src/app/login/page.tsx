@@ -16,9 +16,9 @@ export default function Login() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const redirect = searchParams.get('redirect');
-    if (redirect === 'dashboard') {
-      setRedirectMessage('Please log in to access the dashboard.');
+    const redirect = searchParams.get("redirect");
+    if (redirect === "dashboard") {
+      setRedirectMessage("Please log in to access the dashboard.");
     }
   }, [searchParams]);
 
@@ -42,7 +42,9 @@ export default function Login() {
       <main className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome Back
+            </h1>
             <p className="text-gray-600">Sign in to your LucRun account</p>
           </div>
 
@@ -60,7 +62,10 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email Address
               </label>
               <input
@@ -77,7 +82,10 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <input
@@ -104,11 +112,17 @@ export default function Login() {
                   disabled={isLoading}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-700"
+                >
                   Remember me
                 </label>
               </div>
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
                 Forgot password?
               </Link>
             </div>
@@ -124,8 +138,11 @@ export default function Login() {
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-blue-600 hover:text-blue-800 font-semibold">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/signup"
+                className="text-blue-600 hover:text-blue-800 font-semibold"
+              >
                 Sign up here
               </Link>
             </p>

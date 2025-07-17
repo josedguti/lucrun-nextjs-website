@@ -2,7 +2,7 @@
 
 import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PopupButton } from "react-calendly";
@@ -47,7 +47,7 @@ export default function Dashboard() {
   ]);
 
   // Load completion status from localStorage and database
-  const loadProgress = async () => {
+  const loadProgress = useCallback(async () => {
     // First load from localStorage
     const savedProgress = localStorage.getItem("dashboard-progress");
     let progress: Record<string, boolean> = {};
@@ -124,12 +124,12 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error checking database during loadProgress:", error);
     }
-  };
+  }, [supabase]);
 
   // Load completion status from localStorage and database on mount
   useEffect(() => {
     loadProgress();
-  }, []);
+  }, [loadProgress]);
 
   // Check for success parameter and show success message
   useEffect(() => {
@@ -150,7 +150,7 @@ export default function Dashboard() {
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [searchParams]);
+  }, [searchParams, loadProgress]);
 
   // Listen for storage changes and window focus to refresh progress
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function Dashboard() {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("focus", handleWindowFocus);
     };
-  }, []);
+  }, [loadProgress]);
 
   // Save progress to localStorage whenever checklist changes
   useEffect(() => {
@@ -285,9 +285,9 @@ export default function Dashboard() {
                   🎉 Ready for Your Coaching Session!
                 </h2>
                 <p className="text-blue-100 mb-4">
-                  Perfect! You've completed all 3 setup steps. Now schedule a
-                  personalized call with Luc, your running coach, to get expert
-                  guidance tailored to your goals.
+                  Perfect! You&apos;ve completed all 3 setup steps. Now schedule
+                  a personalized call with Luc, your running coach, to get
+                  expert guidance tailored to your goals.
                 </p>
                 <div className="flex items-center text-blue-100 text-sm mb-4">
                   <svg
@@ -325,9 +325,9 @@ export default function Dashboard() {
                 <PopupButton
                   url="https://calendly.com/luc-run-coach"
                   rootElement={
-                    typeof document !== "undefined"
+                    (typeof document !== "undefined"
                       ? document.getElementById("__next") || document.body
-                      : (undefined as any)
+                      : undefined) as HTMLElement
                   }
                   text="Schedule Your Meeting"
                   className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg text-lg hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
@@ -464,9 +464,9 @@ export default function Dashboard() {
               🎉 Welcome to LucRun Training!
             </h2>
             <p className="text-lg opacity-90">
-              You're all set up and ready to start your running journey. Don't
-              forget to schedule your coaching call above and explore your
-              training calendar!
+              You&apos;re all set up and ready to start your running journey.
+              Don&apos;t forget to schedule your coaching call above and explore
+              your training calendar!
             </p>
           </div>
         )}

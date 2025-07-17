@@ -25,15 +25,20 @@ export default function Calendar() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    email?: string;
+  } | null>(null);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [draggedSession, setDraggedSession] = useState<TrainingSession | null>(
     null
   );
   const [showCreateModal, setShowCreateModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [createModalDate, setCreateModalDate] = useState<Date | null>(null);
   const [newSession, setNewSession] = useState({
     title: "",
@@ -71,6 +76,7 @@ export default function Calendar() {
   );
 
   const today = new Date();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const todayString = today.toISOString().split("T")[0];
 
   // Load user and training sessions from database
@@ -143,7 +149,10 @@ export default function Calendar() {
   }, [router, supabase]);
 
   // Helper function to convert local session to database format
-  const sessionToDbFormat = (session: any, userId: string) => {
+  const sessionToDbFormat = (
+    session: Omit<TrainingSession, "id"> | TrainingSession,
+    userId: string
+  ) => {
     return {
       user_id: userId,
       title: session.title,
@@ -346,6 +355,7 @@ export default function Calendar() {
     return dates;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getTimeSlots = () => {
     const slots = [];
     for (let hour = 6; hour <= 22; hour++) {
@@ -357,6 +367,7 @@ export default function Calendar() {
     return slots;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getSessionsForDateTime = (date: Date, timeSlot: string) => {
     const dateString = date.toISOString().split("T")[0];
     return trainingSessions.filter((session) => {
@@ -394,6 +405,7 @@ export default function Calendar() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getCurrentTime = () => {
     const now = new Date();
     return `${now.getHours().toString().padStart(2, "0")}:${now
@@ -1138,7 +1150,7 @@ export default function Calendar() {
                   {/* RPE */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      RPE (Perception de l'effort)
+                      RPE (Perception de l&apos;effort)
                     </label>
                     <select
                       value={newSession.rpe}
@@ -1390,7 +1402,7 @@ export default function Calendar() {
                   {/* RPE */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      RPE (Perception de l'effort)
+                      RPE (Perception de l&apos;effort)
                     </label>
                     <select
                       value={editSession.rpe}

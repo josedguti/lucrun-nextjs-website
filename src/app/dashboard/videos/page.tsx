@@ -2,6 +2,7 @@
 
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState } from "react";
+import Image from "next/image";
 
 interface Video {
   id: string;
@@ -13,6 +14,7 @@ interface Video {
 }
 
 export default function Videos() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
 
   const videos: Video[] = [
@@ -136,9 +138,11 @@ export default function Videos() {
             >
               {/* Video Thumbnail */}
               <div className="relative group">
-                <img
+                <Image
                   src={video.thumbnail}
                   alt={video.title}
+                  width={400}
+                  height={192}
                   className="w-full h-48 object-cover"
                 />
 

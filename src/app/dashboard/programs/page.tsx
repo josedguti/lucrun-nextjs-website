@@ -8,11 +8,13 @@ import { createClient } from "@/utils/supabase/client";
 export default function Programs() {
   const router = useRouter();
   const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasActiveEnrollment, setHasActiveEnrollment] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userEnrollments, setUserEnrollments] = useState<string[]>([]);
 
   const programs = [

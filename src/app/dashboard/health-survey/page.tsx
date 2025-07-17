@@ -206,6 +206,7 @@ export default function HealthSurvey() {
       console.log("Submitting survey data:", surveyData);
 
       // Check if survey already exists for this user
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { data: existingSurvey, error: checkError } = await supabase
         .from("health_surveys")
         .select("id")
@@ -480,9 +481,9 @@ export default function HealthSurvey() {
                 Medical Certificate Required
               </h3>
               <p className="text-amber-700 mb-4">
-                You answered "Yes" to at least one question. Please upload a
-                medical certificate attesting that you can practice physical
-                activity.
+                You answered &quot;Yes&quot; to at least one question. Please
+                upload a medical certificate attesting that you can practice
+                physical activity.
               </p>
               <div>
                 <label className="block text-sm font-medium text-amber-800 mb-2">

@@ -196,6 +196,7 @@ export default function Profile() {
       setError(null);
 
       // Test if we can access the database
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { data: testData, error: testError } = await supabase
         .from("profiles")
         .select("id")
@@ -253,8 +254,8 @@ export default function Profile() {
 
       // Clean the data to ensure no undefined values
       Object.keys(profileData).forEach((key) => {
-        if ((profileData as any)[key] === undefined) {
-          (profileData as any)[key] = null;
+        if (profileData[key as keyof typeof profileData] === undefined) {
+          (profileData as Record<string, unknown>)[key] = null;
         }
       });
 

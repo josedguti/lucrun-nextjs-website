@@ -11,8 +11,8 @@ export default function Home() {
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
             Personalized training programs designed to help you reach your
-            running goals. Whether you're a beginner or preparing for your next
-            marathon, I'll guide you every step of the way.
+            running goals. Whether you&apos;re a beginner or preparing for your
+            next marathon, I&apos;ll guide you every step of the way.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Link
