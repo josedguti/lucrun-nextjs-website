@@ -2,6 +2,8 @@
 
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 interface TrainingSession {
   id: string;
@@ -18,6 +20,13 @@ interface TrainingSession {
 }
 
 export default function Calendar() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -56,60 +65,101 @@ export default function Calendar() {
     return monday;
   });
 
-  // Sample training sessions data
-  const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>([
-    {
-      id: "1",
-      title: "Speed Session",
-      type: "speed",
-      date: "2025-01-15",
-      time: "07:00",
-      duration: "45 min",
-    },
-    {
-      id: "2",
-      title: "Recovery Run",
-      type: "recovery",
-      date: "2025-01-17",
-      time: "18:00",
-      duration: "30 min",
-    },
-    {
-      id: "3",
-      title: "Long Run",
-      type: "long-run",
-      date: "2025-01-19",
-      time: "08:00",
-      duration: "90 min",
-    },
-    {
-      id: "4",
-      title: "Interval Training",
-      type: "interval",
-      date: "2025-01-22",
-      time: "07:30",
-      duration: "60 min",
-    },
-    {
-      id: "5",
-      title: "Tempo Run",
-      type: "tempo",
-      date: "2025-01-20",
-      time: "06:30",
-      duration: "40 min",
-    },
-    {
-      id: "6",
-      title: "Easy Run",
-      type: "recovery",
-      date: "2025-01-21",
-      time: "17:30",
-      duration: "25 min",
-    },
-  ]);
+  // Training sessions from database
+  const [trainingSessions, setTrainingSessions] = useState<TrainingSession[]>(
+    []
+  );
 
   const today = new Date();
   const todayString = today.toISOString().split("T")[0];
+
+  // Load user and training sessions from database
+  useEffect(() => {
+    async function loadUserAndSessions() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error("Error getting user:", userError);
+          router.push("/login");
+          return;
+        }
+
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+
+        setCurrentUser(user);
+
+        // Load training sessions for this user
+        const { data: sessions, error: sessionsError } = await supabase
+          .from("training_sessions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("session_date", { ascending: true });
+
+        if (sessionsError) {
+          console.error("Error loading sessions:", sessionsError);
+          setError("Failed to load training sessions");
+          return;
+        }
+
+        // Convert database format to local format
+        const formattedSessions: TrainingSession[] = sessions.map(
+          (session) => ({
+            id: session.id,
+            title: session.title,
+            type: session.session_type,
+            date: session.session_date,
+            time: session.session_time || undefined,
+            duration: session.duration_minutes
+              ? `${session.duration_minutes} min`
+              : undefined,
+            description: session.description || undefined,
+            isCompleted: session.is_completed || false,
+            hasConstraints: session.has_constraints || false,
+            rpe: session.rpe?.toString() || undefined,
+            comments: session.comments || undefined,
+          })
+        );
+
+        setTrainingSessions(formattedSessions);
+      } catch (err) {
+        console.error("Error loading data:", err);
+        setError("Failed to load calendar data");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUserAndSessions();
+  }, [router, supabase]);
+
+  // Helper function to convert local session to database format
+  const sessionToDbFormat = (session: any, userId: string) => {
+    return {
+      user_id: userId,
+      title: session.title,
+      session_type: session.type,
+      session_date: session.date,
+      session_time: session.time || null,
+      duration_minutes: session.duration
+        ? parseInt(session.duration.replace(" min", ""))
+        : null,
+      description: session.description || null,
+      is_completed: session.isCompleted || false,
+      has_constraints: session.hasConstraints || false,
+      rpe: session.rpe ? parseInt(session.rpe) : null,
+      comments: session.comments || null,
+    };
+  };
 
   // Calendar navigation
   const goToPreviousMonth = () => {
@@ -208,18 +258,43 @@ export default function Calendar() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, targetDate: Date) => {
+  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
-    if (draggedSession) {
+    if (draggedSession && currentUser) {
       const newDateString = targetDate.toISOString().split("T")[0];
-      setTrainingSessions((prev) =>
-        prev.map((session) =>
-          session.id === draggedSession.id
-            ? { ...session, date: newDateString }
-            : session
-        )
-      );
-      setDraggedSession(null);
+
+      try {
+        setSaving(true);
+
+        // Update in database
+        const { error } = await supabase
+          .from("training_sessions")
+          .update({ session_date: newDateString })
+          .eq("id", draggedSession.id)
+          .eq("user_id", currentUser.id);
+
+        if (error) {
+          console.error("Error updating session date:", error);
+          setError("Failed to update session date");
+          return;
+        }
+
+        // Update local state
+        setTrainingSessions((prev) =>
+          prev.map((session) =>
+            session.id === draggedSession.id
+              ? { ...session, date: newDateString }
+              : session
+          )
+        );
+
+        setDraggedSession(null);
+      } catch (err) {
+        console.error("Error updating session:", err);
+        setError("Failed to update session");
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -348,26 +423,60 @@ export default function Calendar() {
     setCreateModalDate(null);
   };
 
-  const handleCreateSession = (e: React.FormEvent) => {
+  const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSession.title.trim()) return;
+    if (!newSession.title.trim() || !currentUser) return;
 
-    const session: TrainingSession = {
-      id: Date.now().toString(),
-      title: newSession.title,
-      type: newSession.type,
-      date: newSession.date,
-      time: "08:00", // Default time
-      duration: "30 min", // Default duration
-      description: newSession.description,
-      isCompleted: newSession.isCompleted,
-      hasConstraints: newSession.hasConstraints,
-      rpe: newSession.rpe,
-      comments: newSession.comments,
-    };
+    try {
+      setSaving(true);
+      setError(null);
 
-    setTrainingSessions((prev) => [...prev, session]);
-    closeCreateModal();
+      const sessionData = sessionToDbFormat(
+        {
+          ...newSession,
+          time: "08:00", // Default time
+          duration: "30 min", // Default duration
+        },
+        currentUser.id
+      );
+
+      const { data, error } = await supabase
+        .from("training_sessions")
+        .insert(sessionData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating session:", error);
+        setError("Failed to create session");
+        return;
+      }
+
+      // Convert back to local format and add to state
+      const newLocalSession: TrainingSession = {
+        id: data.id,
+        title: data.title,
+        type: data.session_type,
+        date: data.session_date,
+        time: data.session_time || undefined,
+        duration: data.duration_minutes
+          ? `${data.duration_minutes} min`
+          : undefined,
+        description: data.description || undefined,
+        isCompleted: data.is_completed || false,
+        hasConstraints: data.has_constraints || false,
+        rpe: data.rpe?.toString() || undefined,
+        comments: data.comments || undefined,
+      };
+
+      setTrainingSessions((prev) => [...prev, newLocalSession]);
+      closeCreateModal();
+    } catch (err) {
+      console.error("Error creating session:", err);
+      setError("Failed to create session");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Session modal handlers
@@ -391,42 +500,135 @@ export default function Calendar() {
     setSelectedSession(null);
   };
 
-  const handleUpdateSession = (e: React.FormEvent) => {
+  const handleUpdateSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editSession.title.trim() || !selectedSession) return;
+    if (!editSession.title.trim() || !selectedSession || !currentUser) return;
 
-    setTrainingSessions((prev) =>
-      prev.map((session) =>
-        session.id === selectedSession.id
-          ? {
-              ...session,
-              title: editSession.title,
-              type: editSession.type,
-              date: editSession.date,
-              description: editSession.description,
-              isCompleted: editSession.isCompleted,
-              hasConstraints: editSession.hasConstraints,
-              rpe: editSession.rpe,
-              comments: editSession.comments,
-            }
-          : session
-      )
-    );
-    closeSessionModal();
+    try {
+      setSaving(true);
+      setError(null);
+
+      const sessionData = sessionToDbFormat(
+        {
+          ...editSession,
+          time: selectedSession.time, // Keep existing time
+          duration: selectedSession.duration, // Keep existing duration
+        },
+        currentUser.id
+      );
+
+      const { error } = await supabase
+        .from("training_sessions")
+        .update(sessionData)
+        .eq("id", selectedSession.id)
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        console.error("Error updating session:", error);
+        setError("Failed to update session");
+        return;
+      }
+
+      // Update local state
+      setTrainingSessions((prev) =>
+        prev.map((session) =>
+          session.id === selectedSession.id
+            ? {
+                ...session,
+                title: editSession.title,
+                type: editSession.type,
+                date: editSession.date,
+                description: editSession.description,
+                isCompleted: editSession.isCompleted,
+                hasConstraints: editSession.hasConstraints,
+                rpe: editSession.rpe,
+                comments: editSession.comments,
+              }
+            : session
+        )
+      );
+
+      closeSessionModal();
+    } catch (err) {
+      console.error("Error updating session:", err);
+      setError("Failed to update session");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDeleteSession = () => {
-    if (!selectedSession) return;
+  const handleDeleteSession = async () => {
+    if (!selectedSession || !currentUser) return;
 
-    setTrainingSessions((prev) =>
-      prev.filter((session) => session.id !== selectedSession.id)
-    );
-    closeSessionModal();
+    try {
+      setSaving(true);
+      setError(null);
+
+      const { error } = await supabase
+        .from("training_sessions")
+        .delete()
+        .eq("id", selectedSession.id)
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        console.error("Error deleting session:", error);
+        setError("Failed to delete session");
+        return;
+      }
+
+      // Update local state
+      setTrainingSessions((prev) =>
+        prev.filter((session) => session.id !== selectedSession.id)
+      );
+
+      closeSessionModal();
+    } catch (err) {
+      console.error("Error deleting session:", err);
+      setError("Failed to delete session");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+            Training Calendar
+          </h1>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="mt-2 text-sm text-red-600 underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {saving && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+              <p className="text-blue-700">Saving changes...</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
@@ -852,7 +1054,7 @@ export default function Calendar() {
                       })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -991,7 +1193,7 @@ export default function Calendar() {
                       setNewSession({ ...newSession, comments: e.target.value })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -1006,9 +1208,13 @@ export default function Calendar() {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    Créer
+                    {saving && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{saving ? "Creating..." : "Créer"}</span>
                   </button>
                 </div>
               </form>
@@ -1094,7 +1300,7 @@ export default function Calendar() {
                       })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -1242,7 +1448,7 @@ export default function Calendar() {
                       })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -1251,23 +1457,32 @@ export default function Calendar() {
                   <button
                     type="button"
                     onClick={handleDeleteSession}
-                    className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                    disabled={saving}
+                    className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    Supprimer
+                    {saving && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                    )}
+                    <span>{saving ? "Deleting..." : "Supprimer"}</span>
                   </button>
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={closeSessionModal}
-                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      disabled={saving}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
+                      disabled={saving}
+                      className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                     >
-                      Modifier
+                      {saving && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      )}
+                      <span>{saving ? "Updating..." : "Modifier"}</span>
                     </button>
                   </div>
                 </div>

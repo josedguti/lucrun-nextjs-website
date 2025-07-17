@@ -4,6 +4,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { PopupButton } from "react-calendly";
 
 interface ChecklistItem {
   id: string;
@@ -16,7 +18,9 @@ interface ChecklistItem {
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
+  const supabase = createClient();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successType, setSuccessType] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
     {
       id: "profile",
@@ -40,28 +44,16 @@ export default function Dashboard() {
       href: "/dashboard/programs",
       completed: false,
     },
-    {
-      id: "calendar",
-      title: "Set Up Training Schedule",
-      description: "Create your first training session in the calendar",
-      href: "/dashboard/calendar",
-      completed: false,
-    },
-    {
-      id: "videos",
-      title: "Unlock Training Videos",
-      description: "Access exclusive training content and video library",
-      href: "/dashboard/videos",
-      completed: false,
-      locked: true,
-    },
   ]);
 
-  // Load completion status from localStorage
-  const loadProgress = () => {
+  // Load completion status from localStorage and database
+  const loadProgress = async () => {
+    // First load from localStorage
     const savedProgress = localStorage.getItem("dashboard-progress");
+    let progress: Record<string, boolean> = {};
+
     if (savedProgress) {
-      const progress = JSON.parse(savedProgress);
+      progress = JSON.parse(savedProgress);
       setChecklist((prev) =>
         prev.map((item) => ({
           ...item,
@@ -69,21 +61,92 @@ export default function Dashboard() {
         }))
       );
     }
+
+    // Then check database for completion status and override if needed
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (!userError && user) {
+        // Check profile completion
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("profile_completed")
+          .eq("id", user.id)
+          .single();
+
+        if (!profileError && profile?.profile_completed === true) {
+          console.log("Database shows profile is completed, updating state...");
+          progress.profile = true;
+        }
+
+        // Check health survey completion
+        const { data: healthSurvey, error: surveyError } = await supabase
+          .from("health_surveys")
+          .select("completed_at")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!surveyError && healthSurvey?.completed_at) {
+          console.log(
+            "Database shows health survey is completed, updating state..."
+          );
+          progress["health-survey"] = true;
+        }
+
+        // Check program enrollment completion
+        const { data: enrollments, error: enrollmentError } = await supabase
+          .from("user_program_enrollments")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("is_active", true);
+
+        if (!enrollmentError && enrollments && enrollments.length > 0) {
+          console.log(
+            "Database shows program enrollment is completed, updating state..."
+          );
+          progress["programs"] = true;
+        }
+
+        // Update localStorage with all progress
+        localStorage.setItem("dashboard-progress", JSON.stringify(progress));
+
+        // Update checklist state
+        setChecklist((prev) =>
+          prev.map((item) => ({
+            ...item,
+            completed: progress[item.id] || false,
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Error checking database during loadProgress:", error);
+    }
   };
 
-  // Load completion status from localStorage on mount
+  // Load completion status from localStorage and database on mount
   useEffect(() => {
     loadProgress();
   }, []);
 
   // Check for success parameter and show success message
   useEffect(() => {
-    const successType = searchParams.get("success");
-    if (successType === "profile") {
+    const successParam = searchParams.get("success");
+    if (
+      successParam === "profile" ||
+      successParam === "health-survey" ||
+      successParam === "program-enrollment"
+    ) {
+      setSuccessType(successParam);
       setShowSuccessMessage(true);
+      // Check completion status when returning from form save
+      loadProgress();
       // Auto-hide the message after 5 seconds
       const timer = setTimeout(() => {
         setShowSuccessMessage(false);
+        setSuccessType(null);
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -118,26 +181,6 @@ export default function Dashboard() {
     }, {} as Record<string, boolean>);
     localStorage.setItem("dashboard-progress", JSON.stringify(progress));
   }, [checklist]);
-
-  // Check if videos should be unlocked (separate effect with specific dependencies)
-  useEffect(() => {
-    const mainTasksCompleted = checklist
-      .filter((item) => item.id !== "videos")
-      .every((item) => item.completed);
-
-    const videosItem = checklist.find((item) => item.id === "videos");
-    if (videosItem && videosItem.locked === mainTasksCompleted) {
-      setChecklist((prev) =>
-        prev.map((item) =>
-          item.id === "videos" ? { ...item, locked: !mainTasksCompleted } : item
-        )
-      );
-    }
-  }, [
-    checklist
-      .filter((item) => item.id !== "videos")
-      .map((item) => item.completed),
-  ]);
 
   const completedCount = checklist.filter((item) => item.completed).length;
   const totalCount = checklist.length;
@@ -177,13 +220,20 @@ export default function Dashboard() {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-green-800">
-                  🎉 Profile completed successfully! Your first step is now
-                  complete.
+                  {successType === "profile" &&
+                    "🎉 Profile completed successfully! Your first step is now complete."}
+                  {successType === "health-survey" &&
+                    "🎉 Health survey completed successfully! Another step towards your training journey."}
+                  {successType === "program-enrollment" &&
+                    "🎉 Program enrollment successful! You're now ready to start your training journey."}
                 </p>
               </div>
             </div>
             <button
-              onClick={() => setShowSuccessMessage(false)}
+              onClick={() => {
+                setShowSuccessMessage(false);
+                setSuccessType(null);
+              }}
               className="flex-shrink-0 ml-4 text-green-400 hover:text-green-600"
             >
               <svg
@@ -225,6 +275,67 @@ export default function Dashboard() {
               : `${Math.round(progressPercentage)}% complete`}
           </p>
         </div>
+
+        {/* Schedule Meeting Section - Show when all 3 steps are complete */}
+        {checklist.every((item) => item.completed) && (
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-8 mb-6 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2">
+                  🎉 Ready for Your Coaching Session!
+                </h2>
+                <p className="text-blue-100 mb-4">
+                  Perfect! You've completed all 3 setup steps. Now schedule a
+                  personalized call with Luc, your running coach, to get expert
+                  guidance tailored to your goals.
+                </p>
+                <div className="flex items-center text-blue-100 text-sm mb-4">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>30-minute free consultation</span>
+                  <span className="mx-3">•</span>
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span>Video call via Zoom</span>
+                </div>
+              </div>
+              <div className="ml-8">
+                <PopupButton
+                  url="https://calendly.com/luc-run-coach"
+                  rootElement={
+                    typeof document !== "undefined"
+                      ? document.getElementById("__next") || document.body
+                      : (undefined as any)
+                  }
+                  text="Schedule Your Meeting"
+                  className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg text-lg hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Checklist */}
         <div className="space-y-4">
@@ -353,8 +464,9 @@ export default function Dashboard() {
               🎉 Welcome to LucRun Training!
             </h2>
             <p className="text-lg opacity-90">
-              You're all set up and ready to start your running journey. Explore
-              your dashboard and begin training!
+              You're all set up and ready to start your running journey. Don't
+              forget to schedule your coaching call above and explore your
+              training calendar!
             </p>
           </div>
         )}

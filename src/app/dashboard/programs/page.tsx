@@ -1,10 +1,19 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 export default function Programs() {
+  const router = useRouter();
+  const supabase = createClient();
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [hasActiveEnrollment, setHasActiveEnrollment] = useState(false);
+  const [userEnrollments, setUserEnrollments] = useState<string[]>([]);
 
   const programs = [
     {
@@ -201,6 +210,55 @@ export default function Programs() {
     },
   ];
 
+  // Load existing program enrollments on component mount
+  useEffect(() => {
+    async function loadEnrollments() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+
+        // Get user's active program enrollments
+        const { data: enrollments, error: enrollmentError } = await supabase
+          .from("user_program_enrollments")
+          .select(
+            `
+            program_id,
+            is_active,
+            training_programs(program_type)
+          `
+          )
+          .eq("user_id", user.id)
+          .eq("is_active", true);
+
+        if (enrollmentError) {
+          console.error("Error loading enrollments:", enrollmentError);
+          throw enrollmentError;
+        }
+
+        if (enrollments && enrollments.length > 0) {
+          setHasActiveEnrollment(true);
+          setUserEnrollments(enrollments.map((e) => e.program_id));
+        }
+      } catch (err) {
+        console.error("Error loading enrollments:", err);
+        setError("Failed to load program enrollments");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadEnrollments();
+  }, [router, supabase]);
+
   const getColorClasses = (color: string) => {
     switch (color) {
       case "green":
@@ -269,13 +327,80 @@ export default function Programs() {
     }
   };
 
-  const handleEnrollClick = (programId: string) => {
-    setSelectedProgram(programId);
-    // Here you would typically redirect to enrollment or payment
-    alert(
-      `Enrolling in ${programs.find((p) => p.id === programId)?.title} program!`
-    );
+  const handleEnrollClick = async (programId: string) => {
+    try {
+      setEnrolling(programId);
+      setError(null);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      // First, get the actual program ID from the training_programs table
+      const { data: program, error: programError } = await supabase
+        .from("training_programs")
+        .select("id")
+        .eq("program_type", programId)
+        .single();
+
+      if (programError) {
+        console.error("Error finding program:", programError);
+        throw new Error("Program not found");
+      }
+
+      // Create enrollment record
+      const enrollmentData = {
+        user_id: user.id,
+        program_id: program.id,
+        is_active: true,
+        progress_percentage: 0,
+      };
+
+      const { data: enrollment, error: enrollmentError } = await supabase
+        .from("user_program_enrollments")
+        .insert(enrollmentData)
+        .select();
+
+      if (enrollmentError) {
+        console.error("Error creating enrollment:", enrollmentError);
+        throw new Error(
+          `Failed to enroll in program: ${enrollmentError.message}`
+        );
+      }
+
+      console.log("Successfully enrolled in program:", enrollment);
+
+      // Redirect to dashboard with success indication
+      router.push("/dashboard?success=program-enrollment");
+    } catch (err) {
+      console.error("Error enrolling in program:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
+      setError(errorMessage);
+    } finally {
+      setEnrolling(null);
+    }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+            Training Programs
+          </h1>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -289,6 +414,43 @@ export default function Programs() {
             running goals.
           </p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        {hasActiveEnrollment && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">
+                  Program Enrollment Complete
+                </h3>
+                <p className="text-sm text-green-700 mt-1">
+                  You are currently enrolled in a training program. You can view
+                  your progress in the calendar section.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
           {programs.map((program) => {
@@ -319,9 +481,23 @@ export default function Programs() {
                 {/* Enroll Button */}
                 <button
                   onClick={() => handleEnrollClick(program.id)}
-                  className={`w-full ${colors.button} text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-300`}
+                  disabled={hasActiveEnrollment || enrolling === program.id}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors duration-300 flex items-center justify-center space-x-2 ${
+                    hasActiveEnrollment || enrolling === program.id
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : `${colors.button} text-white`
+                  }`}
                 >
-                  Start This Program
+                  {enrolling === program.id && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>
+                    {enrolling === program.id
+                      ? "Enrolling..."
+                      : hasActiveEnrollment
+                      ? "Already Enrolled"
+                      : "Start This Program"}
+                  </span>
                 </button>
 
                 {/* Background Decoration */}

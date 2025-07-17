@@ -85,7 +85,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z"
           />
         </svg>
       ),
@@ -113,7 +113,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <ProtectedRoute>
-      <div className="h-screen bg-gray-50 flex">
+      <div className="fixed inset-0 bg-gray-50 flex overflow-hidden">
         {/* Mobile sidebar overlay */}
         {isSidebarOpen && (
           <div
@@ -162,36 +162,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 ))}
               </ul>
             </nav>
-
-            {/* Logout Button */}
-            <div className="p-4 border-t border-gray-200">
-              <Link
-                href="/"
-                className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors w-full"
-              >
-                <svg
-                  className="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-                Logout
-              </Link>
-            </div>
           </div>
         </div>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col lg:pl-0">
+        <div className="flex-1 flex flex-col lg:pl-0 min-w-0">
           {/* Top header for mobile */}
-          <header className="bg-white shadow-sm border-b border-gray-200 lg:hidden">
+          <header className="bg-white shadow-sm border-b border-gray-200 lg:hidden flex-shrink-0">
             <div className="flex items-center justify-between h-16 px-6">
               <button
                 className="lg:hidden"
@@ -216,7 +193,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
 
           {/* Page content */}
-          <main className="flex-1 p-4 overflow-auto">
+          <main className="flex-1 p-4 overflow-y-auto min-h-0">
             {/* Back to Dashboard button - only show when not on main dashboard */}
             {pathname !== "/dashboard" && (
               <div className="mb-6">

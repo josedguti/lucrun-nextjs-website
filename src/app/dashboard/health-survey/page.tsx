@@ -1,11 +1,17 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 export default function HealthSurvey() {
   const router = useRouter();
+  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [formData, setFormData] = useState({
     familyCardiacDeath: "",
     chestPainPalpitations: "",
@@ -21,6 +27,107 @@ export default function HealthSurvey() {
   const [medicalCertificate, setMedicalCertificate] = useState<File | null>(
     null
   );
+
+  // Load existing survey data on component mount
+  useEffect(() => {
+    async function loadSurveyData() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+
+        const { data: survey, error: surveyError } = await supabase
+          .from("health_surveys")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        if (surveyError && surveyError.code !== "PGRST116") {
+          throw surveyError;
+        }
+
+        if (survey) {
+          // Check if survey is completed
+          if (survey.completed_at) {
+            setSurveyCompleted(true);
+          }
+
+          // Convert boolean values back to "yes"/"no" strings for the form
+          setFormData({
+            familyCardiacDeath:
+              survey.family_cardiac_death === true
+                ? "yes"
+                : survey.family_cardiac_death === false
+                ? "no"
+                : "",
+            chestPainPalpitations:
+              survey.chest_pain_palpitations === true
+                ? "yes"
+                : survey.chest_pain_palpitations === false
+                ? "no"
+                : "",
+            asthmaWheezing:
+              survey.asthma_wheezing === true
+                ? "yes"
+                : survey.asthma_wheezing === false
+                ? "no"
+                : "",
+            lossOfConsciousness:
+              survey.loss_of_consciousness === true
+                ? "yes"
+                : survey.loss_of_consciousness === false
+                ? "no"
+                : "",
+            muscleJointPain:
+              survey.muscle_joint_pain === true
+                ? "yes"
+                : survey.muscle_joint_pain === false
+                ? "no"
+                : "",
+            regularMedications:
+              survey.regular_medications === true
+                ? "yes"
+                : survey.regular_medications === false
+                ? "no"
+                : "",
+            medicalPrescription:
+              survey.medical_prescription === true
+                ? "yes"
+                : survey.medical_prescription === false
+                ? "no"
+                : "",
+            exerciseInducedPain:
+              survey.exercise_induced_pain === true
+                ? "yes"
+                : survey.exercise_induced_pain === false
+                ? "no"
+                : "",
+            pregnancyRecentBirth:
+              survey.pregnancy_recent_birth === true
+                ? "yes"
+                : survey.pregnancy_recent_birth === false
+                ? "no"
+                : "",
+          });
+        }
+      } catch (err) {
+        console.error("Error loading survey data:", err);
+        setError("Failed to load survey data");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSurveyData();
+  }, [router, supabase]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,24 +152,112 @@ export default function HealthSurvey() {
 
   // Check if submit button should be disabled
   const isSubmitDisabled =
-    !allQuestionsAnswered || (hasYesAnswer && !medicalCertificate);
+    !allQuestionsAnswered ||
+    (hasYesAnswer && !medicalCertificate) ||
+    saving ||
+    surveyCompleted;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent submission if survey is already completed
+    if (surveyCompleted) {
+      return;
+    }
 
     // Validate that if any answer is "yes", a medical certificate is required
     if (hasYesAnswer && !medicalCertificate) {
-      alert(
+      setError(
         "Please upload a medical certificate before submitting the survey."
       );
       return;
     }
 
-    console.log("Health survey submitted:", formData);
-    console.log("Medical certificate:", medicalCertificate);
-    // Here you would typically send the data to your backend
-    // For now, we'll just show a success message or redirect
-    alert("Health survey submitted successfully!");
+    try {
+      setSaving(true);
+      setError(null);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      // Prepare the survey data for database - convert "yes"/"no" strings to booleans
+      const surveyData = {
+        user_id: user.id,
+        family_cardiac_death: formData.familyCardiacDeath === "yes",
+        chest_pain_palpitations: formData.chestPainPalpitations === "yes",
+        asthma_wheezing: formData.asthmaWheezing === "yes",
+        loss_of_consciousness: formData.lossOfConsciousness === "yes",
+        muscle_joint_pain: formData.muscleJointPain === "yes",
+        regular_medications: formData.regularMedications === "yes",
+        medical_prescription: formData.medicalPrescription === "yes",
+        exercise_induced_pain: formData.exerciseInducedPain === "yes",
+        pregnancy_recent_birth: formData.pregnancyRecentBirth === "yes",
+        has_medical_certificate: !!medicalCertificate,
+        medical_certificate_filename: medicalCertificate?.name || null,
+        completed_at: new Date().toISOString(),
+      };
+
+      console.log("Submitting survey data:", surveyData);
+
+      // Check if survey already exists for this user
+      const { data: existingSurvey, error: checkError } = await supabase
+        .from("health_surveys")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      let surveyResult;
+      if (existingSurvey) {
+        // Update existing survey
+        const { data, error: updateError } = await supabase
+          .from("health_surveys")
+          .update(surveyData)
+          .eq("user_id", user.id)
+          .select();
+
+        if (updateError) {
+          console.error("Survey update error:", updateError);
+          throw new Error(`Failed to update survey: ${updateError.message}`);
+        }
+        surveyResult = data;
+        console.log("Survey updated successfully:", surveyResult);
+      } else {
+        // Insert new survey
+        const { data, error: insertError } = await supabase
+          .from("health_surveys")
+          .insert(surveyData)
+          .select();
+
+        if (insertError) {
+          console.error("Survey insert error:", insertError);
+          throw new Error(`Failed to save survey: ${insertError.message}`);
+        }
+        surveyResult = data;
+        console.log("Survey saved successfully:", surveyResult);
+      }
+
+      // TODO: Handle medical certificate file upload to storage
+      if (medicalCertificate) {
+        console.log("Medical certificate file:", medicalCertificate);
+        // For now, we'll just log it. File upload implementation can be added later.
+      }
+
+      // Redirect to dashboard with success indication
+      router.push("/dashboard?success=health-survey");
+    } catch (err) {
+      console.error("Error saving survey:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
+      setError(errorMessage);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -134,6 +329,21 @@ export default function HealthSurvey() {
     },
   ];
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+            Health Survey
+          </h1>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto">
@@ -148,8 +358,49 @@ export default function HealthSurvey() {
           </p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        {surveyCompleted && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-green-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">
+                  Health Survey Completed
+                </h3>
+                <p className="text-sm text-green-700 mt-1">
+                  You have already completed this health survey. The information
+                  below is read-only and cannot be modified.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div
+            className={`rounded-lg shadow p-6 ${
+              surveyCompleted ? "bg-gray-50 border border-gray-200" : "bg-white"
+            }`}
+          >
             <div className="space-y-8">
               {questions.map((q, index) => (
                 <div
@@ -157,7 +408,11 @@ export default function HealthSurvey() {
                   className="border-b border-gray-200 pb-6 last:border-b-0 last:pb-0"
                 >
                   <div className="mb-4">
-                    <label className="block text-base font-medium text-gray-900 mb-4">
+                    <label
+                      className={`block text-base font-medium mb-4 ${
+                        surveyCompleted ? "text-gray-600" : "text-gray-900"
+                      }`}
+                    >
                       {index + 1}. {q.question}
                     </label>
                     <div className="flex space-x-6">
@@ -170,10 +425,21 @@ export default function HealthSurvey() {
                             formData[q.name as keyof typeof formData] === "yes"
                           }
                           onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          disabled={surveyCompleted}
+                          className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                            surveyCompleted
+                              ? "cursor-not-allowed opacity-50"
+                              : ""
+                          }`}
                           required
                         />
-                        <span className="ml-2 text-sm text-gray-700">Yes</span>
+                        <span
+                          className={`ml-2 text-sm ${
+                            surveyCompleted ? "text-gray-500" : "text-gray-700"
+                          }`}
+                        >
+                          Yes
+                        </span>
                       </label>
                       <label className="flex items-center">
                         <input
@@ -184,10 +450,21 @@ export default function HealthSurvey() {
                             formData[q.name as keyof typeof formData] === "no"
                           }
                           onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          disabled={surveyCompleted}
+                          className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                            surveyCompleted
+                              ? "cursor-not-allowed opacity-50"
+                              : ""
+                          }`}
                           required
                         />
-                        <span className="ml-2 text-sm text-gray-700">No</span>
+                        <span
+                          className={`ml-2 text-sm ${
+                            surveyCompleted ? "text-gray-500" : "text-gray-700"
+                          }`}
+                        >
+                          No
+                        </span>
                       </label>
                     </div>
                   </div>
@@ -217,8 +494,11 @@ export default function HealthSurvey() {
                     id="medicalCertificate"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     onChange={handleFileChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    required={hasYesAnswer}
+                    disabled={surveyCompleted}
+                    className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
+                      surveyCompleted ? "cursor-not-allowed opacity-50" : ""
+                    }`}
+                    required={hasYesAnswer && !surveyCompleted}
                   />
                 </div>
                 {medicalCertificate && (
@@ -264,7 +544,7 @@ export default function HealthSurvey() {
 
           {/* Action Buttons */}
           <div className="pt-6">
-            {isSubmitDisabled && (
+            {isSubmitDisabled && !surveyCompleted && (
               <p className="text-sm text-amber-600 mb-4 text-right">
                 {!allQuestionsAnswered
                   ? "Please answer all questions to continue."
@@ -277,19 +557,45 @@ export default function HealthSurvey() {
                 onClick={handleCancel}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {surveyCompleted ? "Back to Dashboard" : "Cancel"}
               </button>
-              <button
-                type="submit"
-                disabled={isSubmitDisabled}
-                className={`px-6 py-3 rounded-lg transition-colors ${
-                  isSubmitDisabled
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}
-              >
-                Submit Survey
-              </button>
+              {surveyCompleted ? (
+                <button
+                  type="button"
+                  disabled
+                  className="px-6 py-3 bg-green-100 text-green-700 rounded-lg cursor-not-allowed flex items-center space-x-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>Survey Completed</span>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSubmitDisabled}
+                  className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
+                    isSubmitDisabled
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                >
+                  {saving && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>{saving ? "Submitting..." : "Submit Survey"}</span>
+                </button>
+              )}
             </div>
           </div>
         </form>
