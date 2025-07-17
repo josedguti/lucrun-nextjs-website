@@ -2,7 +2,7 @@
 
 import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PopupButton } from "react-calendly";
@@ -16,7 +16,7 @@ interface ChecklistItem {
   locked?: boolean;
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -472,5 +472,13 @@ export default function Dashboard() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

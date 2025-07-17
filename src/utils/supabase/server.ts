@@ -9,11 +9,13 @@ export const createClient = (cookieStore: ReturnType<typeof cookies>) => {
   return createServerClient(supabaseUrl!, supabaseKey!, {
     cookies: {
       getAll() {
+        // @ts-expect-error - Next.js cookies API compatibility
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
+            // @ts-expect-error - Next.js cookies API compatibility
             cookieStore.set(name, value, options)
           );
         } catch {
