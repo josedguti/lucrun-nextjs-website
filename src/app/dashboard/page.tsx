@@ -21,6 +21,8 @@ function DashboardContent() {
   const supabase = createClient();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successType, setSuccessType] = useState<string | null>(null);
+  const [meetingScheduled, setMeetingScheduled] = useState(false);
+  const [showMeetingConfirmation, setShowMeetingConfirmation] = useState(false);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
     {
       id: "profile",
@@ -50,6 +52,7 @@ function DashboardContent() {
   const loadProgress = useCallback(async () => {
     // First load from localStorage
     const savedProgress = localStorage.getItem("dashboard-progress");
+    const savedMeetingStatus = localStorage.getItem("meeting-scheduled");
     let progress: Record<string, boolean> = {};
 
     if (savedProgress) {
@@ -60,6 +63,10 @@ function DashboardContent() {
           completed: progress[item.id] || false,
         }))
       );
+    }
+
+    if (savedMeetingStatus) {
+      setMeetingScheduled(JSON.parse(savedMeetingStatus));
     }
 
     // Then check database for completion status and override if needed
@@ -158,6 +165,10 @@ function DashboardContent() {
       if (e.key === "dashboard-progress") {
         loadProgress();
       }
+      if (e.key === "meeting-scheduled") {
+        const meetingStatus = e.newValue ? JSON.parse(e.newValue) : false;
+        setMeetingScheduled(meetingStatus);
+      }
     };
 
     const handleWindowFocus = () => {
@@ -182,9 +193,149 @@ function DashboardContent() {
     localStorage.setItem("dashboard-progress", JSON.stringify(progress));
   }, [checklist]);
 
+  // Handle meeting scheduled confirmation
+  const handleMeetingScheduled = () => {
+    setMeetingScheduled(true);
+    localStorage.setItem("meeting-scheduled", JSON.stringify(true));
+    setShowMeetingConfirmation(false);
+  };
+
   const completedCount = checklist.filter((item) => item.completed).length;
   const totalCount = checklist.length;
   const progressPercentage = (completedCount / totalCount) * 100;
+  const allStepsCompleted = checklist.every((item) => item.completed);
+
+  // If meeting is scheduled, show waiting state
+  if (meetingScheduled) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-4xl mx-auto">
+          {/* Waiting for Coach State */}
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-green-500 to-blue-600 rounded-lg shadow-lg p-12 text-white mb-8">
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h1 className="text-3xl font-bold mb-4">
+                🎉 Setup Complete & Meeting Scheduled!
+              </h1>
+              <p className="text-xl text-blue-100 mb-6">
+                Fantastic! You've completed all setup steps and scheduled your
+                coaching session.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-8 mb-8">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Waiting for Your Coach
+              </h2>
+              <p className="text-lg text-gray-600 mb-6">
+                Luc will review your profile and health information before your
+                scheduled call. After your coaching session, personalized
+                workout sessions will be added to your calendar.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-6 mt-8">
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    What's Next?
+                  </h3>
+                  <ul className="text-sm text-gray-600 space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2">✓</span>
+                      Your coach will review your information
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2">✓</span>
+                      Attend your scheduled coaching call
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">○</span>
+                      Receive personalized training plan
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">○</span>
+                      Start your customized workouts
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    In the Meantime
+                  </h3>
+                  <div className="space-y-3">
+                    <Link
+                      href="/dashboard/videos"
+                      className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      → Watch training videos
+                    </Link>
+                    <Link
+                      href="/dashboard/profile"
+                      className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      → Review your profile
+                    </Link>
+                    <Link
+                      href="/dashboard/calendar"
+                      className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      → Check your calendar
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Reset option for testing */}
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setMeetingScheduled(false);
+                  localStorage.removeItem("meeting-scheduled");
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                Reset meeting status (for testing)
+              </button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -277,7 +428,7 @@ function DashboardContent() {
         </div>
 
         {/* Schedule Meeting Section - Show when all 3 steps are complete */}
-        {checklist.every((item) => item.completed) && (
+        {allStepsCompleted && (
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-8 mb-6 text-white">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -315,13 +466,13 @@ function DashboardContent() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2v8a2 2 0 002 2z"
                     />
                   </svg>
                   <span>Video call via Zoom</span>
                 </div>
               </div>
-              <div className="ml-8">
+              <div className="ml-8 flex flex-col space-y-3">
                 <PopupButton
                   url="https://calendly.com/luc-run-coach"
                   rootElement={
@@ -332,6 +483,41 @@ function DashboardContent() {
                   text="Schedule Your Meeting"
                   className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg text-lg hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                 />
+                <button
+                  onClick={() => setShowMeetingConfirmation(true)}
+                  className="bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-800 transition-colors"
+                >
+                  I've Already Scheduled
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Meeting Confirmation Modal */}
+        {showMeetingConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Confirm Meeting Scheduled
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Have you successfully scheduled your coaching session with Luc
+                through Calendly?
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleMeetingScheduled}
+                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Yes, I've Scheduled
+                </button>
+                <button
+                  onClick={() => setShowMeetingConfirmation(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Not Yet
+                </button>
               </div>
             </div>
           </div>
@@ -458,7 +644,7 @@ function DashboardContent() {
         </div>
 
         {/* Completion Message */}
-        {progressPercentage === 100 && (
+        {progressPercentage === 100 && !allStepsCompleted && (
           <div className="mt-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg p-6 text-white text-center">
             <h2 className="text-2xl font-bold mb-2">
               🎉 Welcome to LucRun Training!

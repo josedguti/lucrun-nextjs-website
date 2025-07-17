@@ -1,17 +1,101 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import ProtectedRoute from "./ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/utils/supabase/client";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+interface UserProfile {
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+}
+
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const pathname = usePathname();
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) {
+        setProfileLoading(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, email")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching profile:", error);
+          // Fallback to user email from auth
+          setUserProfile({
+            first_name: null,
+            last_name: null,
+            email: user.email || null,
+          });
+        } else {
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error("Error in fetchUserProfile:", error);
+        // Fallback to user email from auth
+        setUserProfile({
+          first_name: null,
+          last_name: null,
+          email: user.email || null,
+        });
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user, supabase]);
+
+  // Helper function to get user's initials
+  const getUserInitials = () => {
+    if (userProfile?.first_name && userProfile?.last_name) {
+      return `${userProfile.first_name.charAt(0)}${userProfile.last_name.charAt(
+        0
+      )}`.toUpperCase();
+    }
+    if (userProfile?.first_name) {
+      return userProfile.first_name.charAt(0).toUpperCase();
+    }
+    if (userProfile?.email) {
+      return userProfile.email.charAt(0).toUpperCase();
+    }
+    return "U";
+  };
+
+  // Helper function to get display name
+  const getDisplayName = () => {
+    if (userProfile?.first_name && userProfile?.last_name) {
+      return `${userProfile.first_name} ${userProfile.last_name}`;
+    }
+    if (userProfile?.first_name) {
+      return userProfile.first_name;
+    }
+    if (userProfile?.email) {
+      return userProfile.email.split("@")[0];
+    }
+    return "User";
+  };
 
   const navigation = [
     {
@@ -113,7 +197,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <ProtectedRoute>
-      <div className="fixed inset-0 bg-gray-50 flex overflow-hidden">
+      <div className="fixed top-16 left-0 right-0 bottom-0 bg-gray-50 flex overflow-hidden">
         {/* Mobile sidebar overlay */}
         {isSidebarOpen && (
           <div
@@ -137,11 +221,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="px-6 py-3 border-b border-gray-200">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold">U</span>
+                  <span className="text-white font-semibold">
+                    {profileLoading ? "..." : getUserInitials()}
+                  </span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">User Name</p>
-                  <p className="text-xs text-gray-500">user@example.com</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {profileLoading ? "Loading..." : getDisplayName()}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {profileLoading
+                      ? "Loading..."
+                      : userProfile?.email || user?.email || "No email"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -193,7 +285,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
 
           {/* Page content */}
-          <main className="flex-1 p-4 overflow-y-auto min-h-0">
+          <main className="flex-1 px-4 py-8 overflow-y-auto min-h-0">
             {/* Back to Dashboard button - only show when not on main dashboard */}
             {pathname !== "/dashboard" && (
               <div className="mb-6">
