@@ -234,8 +234,8 @@ function DashboardContent() {
                 🎉 Setup Complete & Meeting Scheduled!
               </h1>
               <p className="text-xl text-blue-100 mb-6">
-                Fantastic! You've completed all setup steps and scheduled your
-                coaching session.
+                Fantastic! You&apos;ve completed all setup steps and scheduled
+                your coaching session.
               </p>
             </div>
 
@@ -269,7 +269,7 @@ function DashboardContent() {
               <div className="grid md:grid-cols-2 gap-6 mt-8">
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    What's Next?
+                    What&apos;s Next?
                   </h3>
                   <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start">
@@ -487,7 +487,7 @@ function DashboardContent() {
                   onClick={() => setShowMeetingConfirmation(true)}
                   className="bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-800 transition-colors"
                 >
-                  I've Already Scheduled
+                  I&apos;ve Already Scheduled
                 </button>
               </div>
             </div>
@@ -510,7 +510,7 @@ function DashboardContent() {
                   onClick={handleMeetingScheduled}
                   className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Yes, I've Scheduled
+                  Yes, I&apos;ve Scheduled
                 </button>
                 <button
                   onClick={() => setShowMeetingConfirmation(false)}
