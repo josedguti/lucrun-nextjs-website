@@ -293,6 +293,37 @@ CREATE POLICY "Users can view own dashboard progress" ON dashboard_progress FOR 
 CREATE POLICY "Users can update own dashboard progress" ON dashboard_progress FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own dashboard progress" ON dashboard_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- Admin policies for coach access (luc.run.coach@gmail.com)
+-- Profiles: Admin can view all profiles
+CREATE POLICY "Admin can view all profiles" ON profiles FOR SELECT USING (
+  auth.jwt() ->> 'email' = 'luc.run.coach@gmail.com'
+);
+
+-- Health Surveys: Admin can view all health surveys
+CREATE POLICY "Admin can view all health surveys" ON health_surveys FOR SELECT USING (
+  auth.jwt() ->> 'email' = 'luc.run.coach@gmail.com'
+);
+
+-- User Program Enrollments: Admin can view all enrollments
+CREATE POLICY "Admin can view all enrollments" ON user_program_enrollments FOR SELECT USING (
+  auth.jwt() ->> 'email' = 'luc.run.coach@gmail.com'
+);
+
+-- Training Sessions: Admin can view all sessions
+CREATE POLICY "Admin can view all sessions" ON training_sessions FOR SELECT USING (
+  auth.jwt() ->> 'email' = 'luc.run.coach@gmail.com'
+);
+
+-- User Video Progress: Admin can view all video progress
+CREATE POLICY "Admin can view all video progress" ON user_video_progress FOR SELECT USING (
+  auth.jwt() ->> 'email' = 'luc.run.coach@gmail.com'
+);
+
+-- Dashboard Progress: Admin can view all dashboard progress
+CREATE POLICY "Admin can view all dashboard progress" ON dashboard_progress FOR SELECT USING (
+  auth.jwt() ->> 'email' = 'luc.run.coach@gmail.com'
+);
+
 -- Training Programs and Videos are publicly readable
 CREATE POLICY "Anyone can view training programs" ON training_programs FOR SELECT USING (is_active = TRUE);
 CREATE POLICY "Anyone can view training videos" ON training_videos FOR SELECT USING (is_active = TRUE);

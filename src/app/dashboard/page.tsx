@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PopupButton } from "react-calendly";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChecklistItem {
   id: string;
@@ -16,9 +17,284 @@ interface ChecklistItem {
   locked?: boolean;
 }
 
+interface RunnerProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  profile_completed: boolean;
+  created_at: string;
+}
+
+interface RunnerProgress {
+  profile: RunnerProfile;
+  profileCompleted: boolean;
+  healthSurveyCompleted: boolean;
+  programEnrolled: boolean;
+  completionPercentage: number;
+}
+
+function AdminDashboard() {
+  const [runners, setRunners] = useState<RunnerProgress[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchRunners = async () => {
+      try {
+        // Get all user profiles
+        const { data: profiles, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, email, profile_completed, created_at")
+          .order("created_at", { ascending: false });
+
+        if (profileError) {
+          console.error("Error fetching profiles:", profileError);
+          setLoading(false);
+          return;
+        }
+
+        if (!profiles) {
+          setLoading(false);
+          return;
+        }
+
+        // For each profile, check health survey and program enrollment
+        const runnersWithProgress = await Promise.all(
+          profiles.map(async (profile) => {
+            // Check health survey completion
+            const { data: healthSurvey } = await supabase
+              .from("health_surveys")
+              .select("completed_at")
+              .eq("user_id", profile.id)
+              .single();
+
+            // Check program enrollment
+            const { data: enrollments } = await supabase
+              .from("user_program_enrollments")
+              .select("id")
+              .eq("user_id", profile.id)
+              .eq("is_active", true);
+
+            const profileCompleted = profile.profile_completed || false;
+            const healthSurveyCompleted = !!healthSurvey?.completed_at;
+            const programEnrolled = enrollments && enrollments.length > 0;
+
+            let completedSteps = 0;
+            if (profileCompleted) completedSteps++;
+            if (healthSurveyCompleted) completedSteps++;
+            if (programEnrolled) completedSteps++;
+
+            const completionPercentage = (completedSteps / 3) * 100;
+
+            return {
+              profile,
+              profileCompleted,
+              healthSurveyCompleted,
+              programEnrolled,
+              completionPercentage,
+            };
+          })
+        );
+
+        setRunners(runnersWithProgress);
+      } catch (error) {
+        console.error("Error in fetchRunners:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRunners();
+  }, [supabase]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading runner data...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const totalRunners = runners.length;
+  const activeRunners = runners.filter(r => r.completionPercentage > 0).length;
+  const completedRunners = runners.filter(r => r.completionPercentage === 100).length;
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-6xl mx-auto">
+        {/* Admin Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Coach Dashboard
+          </h1>
+          <p className="text-lg text-gray-600">
+            Monitor your runners' progress and onboarding status
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-2xl font-bold text-gray-900">{totalRunners}</p>
+                <p className="text-sm text-gray-600">Total Runners</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-2xl font-bold text-gray-900">{activeRunners}</p>
+                <p className="text-sm text-gray-600">Active Runners</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-2xl font-bold text-gray-900">{completedRunners}</p>
+                <p className="text-sm text-gray-600">Setup Complete</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Runners Table */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Runner Progress</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Runner
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Progress
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Joined
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {runners.map((runner) => (
+                  <tr key={runner.profile.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-semibold text-sm">
+                            {runner.profile.first_name 
+                              ? runner.profile.first_name.charAt(0).toUpperCase()
+                              : runner.profile.email?.charAt(0).toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {runner.profile.first_name && runner.profile.last_name
+                              ? `${runner.profile.first_name} ${runner.profile.last_name}`
+                              : runner.profile.first_name || runner.profile.email?.split('@')[0] || 'Unknown User'}
+                          </div>
+                          <div className="text-sm text-gray-500">{runner.profile.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{ width: `${runner.completionPercentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm text-gray-600 min-w-[3rem]">
+                          {Math.round(runner.completionPercentage)}%
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {runner.profileCompleted && <span className="text-green-600 mr-2">Profile ✓</span>}
+                        {runner.healthSurveyCompleted && <span className="text-green-600 mr-2">Health ✓</span>}
+                        {runner.programEnrolled && <span className="text-green-600 mr-2">Program ✓</span>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        runner.completionPercentage === 100
+                          ? 'bg-green-100 text-green-800'
+                          : runner.completionPercentage > 0
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {runner.completionPercentage === 100
+                          ? 'Ready'
+                          : runner.completionPercentage > 0
+                          ? 'In Progress'
+                          : 'Not Started'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(runner.profile.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {runners.length === 0 && (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No runners yet</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Runners will appear here as they sign up and complete their profiles.
+            </p>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+}
+
 function DashboardContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { isAdmin } = useAuth();
+  
+  // All hooks must be called before any conditional returns
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successType, setSuccessType] = useState<string | null>(null);
   const [meetingScheduled, setMeetingScheduled] = useState(false);
@@ -192,6 +468,11 @@ function DashboardContent() {
     }, {} as Record<string, boolean>);
     localStorage.setItem("dashboard-progress", JSON.stringify(progress));
   }, [checklist]);
+
+  // If user is admin, show admin dashboard
+  if (isAdmin) {
+    return <AdminDashboard />;
+  }
 
   // Handle meeting scheduled confirmation
   const handleMeetingScheduled = () => {
