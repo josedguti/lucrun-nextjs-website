@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import EmojiPicker from "emoji-picker-react";
 
 interface TrainingSession {
   id: string;
@@ -602,6 +603,58 @@ export default function Calendar() {
     }
   };
 
+  const [showEmojiPickerDescription, setShowEmojiPickerDescription] =
+    useState(false);
+  const [showEmojiPickerComments, setShowEmojiPickerComments] = useState(false);
+  const [showEditEmojiPickerDescription, setShowEditEmojiPickerDescription] =
+    useState(false);
+  const [showEditEmojiPickerComments, setShowEditEmojiPickerComments] =
+    useState(false);
+
+  // Handle emoji selection for new session
+  const handleEmojiClickDescription = (emojiData: any) => {
+    setNewSession({
+      ...newSession,
+      description: newSession.description + emojiData.emoji,
+    });
+    setShowEmojiPickerDescription(false);
+  };
+
+  const handleEmojiClickComments = (emojiData: any) => {
+    setNewSession({
+      ...newSession,
+      comments: newSession.comments + emojiData.emoji,
+    });
+    setShowEmojiPickerComments(false);
+  };
+
+  // Handle emoji selection for edit session
+  const handleEditEmojiClickDescription = (emojiData: any) => {
+    setEditSession({
+      ...editSession,
+      description: editSession.description + emojiData.emoji,
+    });
+    setShowEditEmojiPickerDescription(false);
+  };
+
+  const handleEditEmojiClickComments = (emojiData: any) => {
+    setEditSession({
+      ...editSession,
+      comments: editSession.comments + emojiData.emoji,
+    });
+    setShowEditEmojiPickerComments(false);
+  };
+
+  // Add helper function to get RPE background color
+  const getRpeBackgroundColor = (rpe: string) => {
+    const rpeValue = parseInt(rpe);
+    if (!rpe || isNaN(rpeValue)) return "";
+    if (rpeValue >= 1 && rpeValue <= 3) return "bg-green-200";
+    if (rpeValue >= 4 && rpeValue <= 7) return "bg-orange-200";
+    if (rpeValue >= 8 && rpeValue <= 10) return "bg-red-200";
+    return "";
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -1024,17 +1077,25 @@ export default function Calendar() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Titre
+                      Type de séance
                     </label>
-                    <input
-                      type="text"
-                      value={newSession.title}
+                    <select
+                      value={newSession.type}
                       onChange={(e) =>
-                        setNewSession({ ...newSession, title: e.target.value })
+                        setNewSession({
+                          ...newSession,
+                          type: e.target.value as TrainingSession["type"],
+                          title: e.target.value, // Set title to match the type
+                        })
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      required
-                    />
+                    >
+                      <option value="speed">Speed Session</option>
+                      <option value="recovery">Recovery Run</option>
+                      <option value="long-run">Long Run</option>
+                      <option value="interval">Interval Training</option>
+                      <option value="tempo">Tempo Run</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1053,7 +1114,7 @@ export default function Calendar() {
                 </div>
 
                 {/* Description */}
-                <div className="mb-4">
+                <div className="mb-4 relative">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
@@ -1068,6 +1129,25 @@ export default function Calendar() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
+                  <div className="flex justify-start mt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowEmojiPickerDescription(
+                          !showEmojiPickerDescription
+                        )
+                      }
+                      aria-label="Add emoji"
+                      className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                    >
+                      <span className="text-sm mr-1">😊</span>
+                    </button>
+                  </div>
+                  {showEmojiPickerDescription && (
+                    <div className="absolute z-10 mt-1 left-0">
+                      <EmojiPicker onEmojiClick={handleEmojiClickDescription} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Radio Button Groups Row */}
@@ -1157,45 +1237,27 @@ export default function Calendar() {
                       onChange={(e) =>
                         setNewSession({ ...newSession, rpe: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${getRpeBackgroundColor(
+                        newSession.rpe
+                      )}`}
                     >
                       <option value="">Sélectionner</option>
-                      <option value="1">1 - Très facile</option>
-                      <option value="2">2 - Facile</option>
-                      <option value="3">3 - Modéré</option>
-                      <option value="4">4 - Quelque peu difficile</option>
-                      <option value="5">5 - Difficile</option>
-                      <option value="6">6 - Très difficile</option>
-                      <option value="7">7 - Extrêmement difficile</option>
-                    </select>
-                  </div>
-
-                  {/* Session Type */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Type de séance
-                    </label>
-                    <select
-                      value={newSession.type}
-                      onChange={(e) =>
-                        setNewSession({
-                          ...newSession,
-                          type: e.target.value as TrainingSession["type"],
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    >
-                      <option value="speed">Speed Session</option>
-                      <option value="recovery">Recovery Run</option>
-                      <option value="long-run">Long Run</option>
-                      <option value="interval">Interval Training</option>
-                      <option value="tempo">Tempo Run</option>
+                      <option value="1">1 - 😌 Très facile</option>
+                      <option value="2">2 - 😊 Facile</option>
+                      <option value="3">3 - 🙂 Modéré</option>
+                      <option value="4">4 - 😐 Quelque peu difficile</option>
+                      <option value="5">5 - 😓 Difficile</option>
+                      <option value="6">6 - 😖 Très difficile</option>
+                      <option value="7">7 - 😫 Extrêmement difficile</option>
+                      <option value="8">8 - 🥵 Intense</option>
+                      <option value="9">9 - 🤯 Très intense</option>
+                      <option value="10">10 - 💀 Maximum</option>
                     </select>
                   </div>
                 </div>
 
                 {/* Comments */}
-                <div className="mb-6">
+                <div className="mb-6 relative">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Commentaires
                   </label>
@@ -1207,6 +1269,23 @@ export default function Calendar() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
+                  <div className="flex justify-start mt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowEmojiPickerComments(!showEmojiPickerComments)
+                      }
+                      className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                      aria-label="Add emoji"
+                    >
+                      <span className="text-sm mr-1">😊</span>
+                    </button>
+                  </div>
+                  {showEmojiPickerComments && (
+                    <div className="absolute z-10 mt-1 left-0">
+                      <EmojiPicker onEmojiClick={handleEmojiClickComments} />
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -1267,20 +1346,25 @@ export default function Calendar() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Titre
+                      Type de séance
                     </label>
-                    <input
-                      type="text"
-                      value={editSession.title}
+                    <select
+                      value={editSession.type}
                       onChange={(e) =>
                         setEditSession({
                           ...editSession,
-                          title: e.target.value,
+                          type: e.target.value as TrainingSession["type"],
+                          title: e.target.value, // Set title to match the type
                         })
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      required
-                    />
+                    >
+                      <option value="speed">Speed Session</option>
+                      <option value="recovery">Recovery Run</option>
+                      <option value="long-run">Long Run</option>
+                      <option value="interval">Interval Training</option>
+                      <option value="tempo">Tempo Run</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1299,7 +1383,7 @@ export default function Calendar() {
                 </div>
 
                 {/* Description */}
-                <div className="mb-4">
+                <div className="mb-4 relative">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
@@ -1314,6 +1398,27 @@ export default function Calendar() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
+                  <div className="flex justify-start mt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowEditEmojiPickerDescription(
+                          !showEditEmojiPickerDescription
+                        )
+                      }
+                      className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                      aria-label="Add emoji"
+                    >
+                      <span className="text-sm mr-1">😊</span>
+                    </button>
+                  </div>
+                  {showEditEmojiPickerDescription && (
+                    <div className="absolute z-10 mt-1 left-0">
+                      <EmojiPicker
+                        onEmojiClick={handleEditEmojiClickDescription}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Radio Button Groups Row */}
@@ -1409,45 +1514,27 @@ export default function Calendar() {
                       onChange={(e) =>
                         setEditSession({ ...editSession, rpe: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${getRpeBackgroundColor(
+                        editSession.rpe
+                      )}`}
                     >
                       <option value="">Sélectionner</option>
-                      <option value="1">1 - Très facile</option>
-                      <option value="2">2 - Facile</option>
-                      <option value="3">3 - Modéré</option>
-                      <option value="4">4 - Quelque peu difficile</option>
-                      <option value="5">5 - Difficile</option>
-                      <option value="6">6 - Très difficile</option>
-                      <option value="7">7 - Extrêmement difficile</option>
-                    </select>
-                  </div>
-
-                  {/* Session Type */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Type de séance
-                    </label>
-                    <select
-                      value={editSession.type}
-                      onChange={(e) =>
-                        setEditSession({
-                          ...editSession,
-                          type: e.target.value as TrainingSession["type"],
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                    >
-                      <option value="speed">Speed Session</option>
-                      <option value="recovery">Recovery Run</option>
-                      <option value="long-run">Long Run</option>
-                      <option value="interval">Interval Training</option>
-                      <option value="tempo">Tempo Run</option>
+                      <option value="1">1 - 😌 Très facile</option>
+                      <option value="2">2 - 😊 Facile</option>
+                      <option value="3">3 - 🙂 Modéré</option>
+                      <option value="4">4 - 😐 Quelque peu difficile</option>
+                      <option value="5">5 - 😓 Difficile</option>
+                      <option value="6">6 - 😖 Très difficile</option>
+                      <option value="7">7 - 😫 Extrêmement difficile</option>
+                      <option value="8">8 - 🥵 Intense</option>
+                      <option value="9">9 - 🤯 Très intense</option>
+                      <option value="10">10 - 💀 Maximum</option>
                     </select>
                   </div>
                 </div>
 
                 {/* Comments */}
-                <div className="mb-6">
+                <div className="mb-6 relative">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Commentaires
                   </label>
@@ -1462,6 +1549,27 @@ export default function Calendar() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
+                  <div className="flex justify-start mt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowEditEmojiPickerComments(
+                          !showEditEmojiPickerComments
+                        )
+                      }
+                      className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                      aria-label="Add emoji"
+                    >
+                      <span className="text-sm mr-1">😊</span>
+                    </button>
+                  </div>
+                  {showEditEmojiPickerComments && (
+                    <div className="absolute z-10 mt-1 left-0">
+                      <EmojiPicker
+                        onEmojiClick={handleEditEmojiClickComments}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
