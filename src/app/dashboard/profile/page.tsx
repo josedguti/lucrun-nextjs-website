@@ -28,6 +28,8 @@ export default function Profile() {
     equipment: [] as string[],
     hasInjury: "",
     injuryDetails: "",
+    hasPastInjury: "",
+    pastInjuryDetails: "",
     hasSmartwatch: "",
     smartwatchType: "",
     // Running Information
@@ -133,6 +135,13 @@ export default function Profile() {
                 ? "no"
                 : "",
             injuryDetails: profile.injury_details || "",
+            hasPastInjury:
+              profile.has_past_injury === true
+                ? "yes"
+                : profile.has_past_injury === false
+                ? "no"
+                : "",
+            pastInjuryDetails: profile.past_injury_details || "",
             hasSmartwatch:
               profile.has_smartwatch === true
                 ? "yes"
@@ -241,6 +250,8 @@ export default function Profile() {
         equipment: formData.equipment,
         has_injury: formData.hasInjury === "yes",
         injury_details: formData.injuryDetails.trim() || null,
+        has_past_injury: formData.hasPastInjury === "yes",
+        past_injury_details: formData.pastInjuryDetails.trim() || null,
         has_smartwatch: formData.hasSmartwatch === "yes",
         smartwatch_type: formData.smartwatchType.trim() || null,
         training_hours_per_week: formData.trainingHoursPerWeek.trim(),
@@ -330,6 +341,7 @@ export default function Profile() {
       formData.currentWeeklyKm.trim(),
       formData.longestDistance.trim(),
       formData.hasInjury.trim(),
+      formData.hasPastInjury.trim(),
       formData.hasSmartwatch.trim(),
     ];
 
@@ -355,6 +367,8 @@ export default function Profile() {
       equipment: [],
       hasInjury: "",
       injuryDetails: "",
+      hasPastInjury: "",
+      pastInjuryDetails: "",
       hasSmartwatch: "",
       smartwatchType: "",
       // Running Information
@@ -906,6 +920,57 @@ export default function Profile() {
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
                     placeholder="Describe your current injuries, their severity, and any limitations they cause..."
+                  ></textarea>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4">
+                  Did you have any significant injuries in the past?{" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="hasPastInjury"
+                      value="yes"
+                      checked={formData.hasPastInjury === "yes"}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Yes</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="hasPastInjury"
+                      value="no"
+                      checked={formData.hasPastInjury === "no"}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">No</span>
+                  </label>
+                </div>
+              </div>
+
+              {formData.hasPastInjury === "yes" && (
+                <div>
+                  <label
+                    htmlFor="pastInjuryDetails"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Please describe your past injury/injuries
+                  </label>
+                  <textarea
+                    id="pastInjuryDetails"
+                    name="pastInjuryDetails"
+                    rows={3}
+                    value={formData.pastInjuryDetails}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    placeholder="Describe your past injuries, when they occurred, and if they still affect you..."
                   ></textarea>
                 </div>
               )}

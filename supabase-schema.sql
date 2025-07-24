@@ -45,6 +45,8 @@ CREATE TABLE profiles (
     -- Health Information
     has_injury BOOLEAN DEFAULT FALSE,
     injury_details TEXT,
+    has_past_injury BOOLEAN DEFAULT FALSE,
+    past_injury_details TEXT,
     
     -- Device Information
     has_smartwatch BOOLEAN DEFAULT FALSE,
@@ -52,10 +54,14 @@ CREATE TABLE profiles (
     
     -- Profile completion tracking
     profile_completed BOOLEAN DEFAULT FALSE,
+
+    -- Is User an Active User
+    is_active BOOLEAN DEFAULT FALSE,
     
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    completed_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Health Survey table
@@ -78,6 +84,7 @@ CREATE TABLE health_surveys (
     has_medical_certificate BOOLEAN DEFAULT FALSE,
     medical_certificate_url TEXT,
     medical_certificate_filename TEXT,
+    document_type TEXT DEFAULT 'medical',
     
     -- Survey completion
     completed_at TIMESTAMP WITH TIME ZONE,
@@ -383,3 +390,29 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER profile_progress_update AFTER UPDATE ON profiles FOR EACH ROW EXECUTE PROCEDURE public.update_dashboard_progress();
 CREATE TRIGGER health_survey_progress_update AFTER UPDATE ON health_surveys FOR EACH ROW EXECUTE PROCEDURE public.update_dashboard_progress();
 CREATE TRIGGER enrollment_progress_update AFTER INSERT ON user_program_enrollments FOR EACH ROW EXECUTE PROCEDURE public.update_dashboard_progress();
+
+-- Create storage bucket for health documents
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('health_documents', 'health_documents', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create storage policies for health documents
+CREATE POLICY "Allow authenticated uploads to health_documents"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'health_documents');
+
+CREATE POLICY "Allow users to view their own health documents"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (bucket_id = 'health_documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Allow users to update their own health documents"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (bucket_id = 'health_documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Allow users to delete their own health documents"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'health_documents' AND auth.uid()::text = (storage.foldername(name))[1]);

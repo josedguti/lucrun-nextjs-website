@@ -22,6 +22,7 @@ export default function HealthSurvey() {
     medicalPrescription: "",
     exerciseInducedPain: "",
     pregnancyRecentBirth: "",
+    documentType: "medical", // Default to medical certificate
   });
 
   const [medicalCertificate, setMedicalCertificate] = useState<File | null>(
@@ -116,6 +117,7 @@ export default function HealthSurvey() {
                 : survey.pregnancy_recent_birth === false
                 ? "no"
                 : "",
+            documentType: survey.document_type || "medical",
           });
         }
       } catch (err) {
@@ -129,7 +131,9 @@ export default function HealthSurvey() {
     loadSurveyData();
   }, [router, supabase]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -142,20 +146,14 @@ export default function HealthSurvey() {
     setMedicalCertificate(file);
   };
 
-  // Check if any question is answered "yes"
-  const hasYesAnswer = Object.values(formData).some((value) => value === "yes");
-
   // Check if all questions are answered
   const allQuestionsAnswered = Object.values(formData).every(
     (value) => value !== ""
   );
 
-  // Check if submit button should be disabled
+  // Check if submit button should be disabled - always require file upload
   const isSubmitDisabled =
-    !allQuestionsAnswered ||
-    (hasYesAnswer && !medicalCertificate) ||
-    saving ||
-    surveyCompleted;
+    !allQuestionsAnswered || !medicalCertificate || saving || surveyCompleted;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,10 +163,10 @@ export default function HealthSurvey() {
       return;
     }
 
-    // Validate that if any answer is "yes", a medical certificate is required
-    if (hasYesAnswer && !medicalCertificate) {
+    // Validate that a medical certificate or sports license is uploaded
+    if (!medicalCertificate) {
       setError(
-        "Please upload a medical certificate before submitting the survey."
+        "Please upload a medical certificate or sports license before submitting the survey."
       );
       return;
     }
@@ -186,6 +184,36 @@ export default function HealthSurvey() {
         return;
       }
 
+      // Upload file to Supabase Storage
+      let fileUrl = null;
+      let fileName = null;
+
+      if (medicalCertificate) {
+        // Make sure the path includes the user ID as a folder name first
+        const fileName = `${Date.now()}-${medicalCertificate.name}`;
+        const filePath = `${user.id}/${fileName}`; // This is the key change - put user.id as a folder
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("health_documents")
+          .upload(filePath, medicalCertificate, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error("File upload error:", uploadError);
+          throw new Error(`Failed to upload file: ${uploadError.message}`);
+        }
+
+        // Get public URL for the file
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("health_documents").getPublicUrl(filePath);
+
+        fileUrl = publicUrl;
+        console.log("File uploaded successfully:", fileUrl);
+      }
+
       // Prepare the survey data for database - convert "yes"/"no" strings to booleans
       const surveyData = {
         user_id: user.id,
@@ -198,8 +226,10 @@ export default function HealthSurvey() {
         medical_prescription: formData.medicalPrescription === "yes",
         exercise_induced_pain: formData.exerciseInducedPain === "yes",
         pregnancy_recent_birth: formData.pregnancyRecentBirth === "yes",
-        has_medical_certificate: !!medicalCertificate,
-        medical_certificate_filename: medicalCertificate?.name || null,
+        has_medical_certificate: true, // Always true now since we require it
+        medical_certificate_url: fileUrl,
+        medical_certificate_filename: fileName,
+        document_type: formData.documentType,
         completed_at: new Date().toISOString(),
       };
 
@@ -243,10 +273,20 @@ export default function HealthSurvey() {
         console.log("Survey saved successfully:", surveyResult);
       }
 
-      // TODO: Handle medical certificate file upload to storage
-      if (medicalCertificate) {
-        console.log("Medical certificate file:", medicalCertificate);
-        // For now, we'll just log it. File upload implementation can be added later.
+      // Update dashboard progress
+      try {
+        const { error: progressError } = await supabase
+          .from("dashboard_progress")
+          .upsert({
+            user_id: user.id,
+            health_survey_completed: true,
+          });
+
+        if (progressError) {
+          console.warn("Dashboard progress update failed:", progressError);
+        }
+      } catch (progressErr) {
+        console.warn("Dashboard progress update skipped:", progressErr);
       }
 
       // Redirect to dashboard with success indication
@@ -273,6 +313,7 @@ export default function HealthSurvey() {
       medicalPrescription: "",
       exerciseInducedPain: "",
       pregnancyRecentBirth: "",
+      documentType: "medical",
     });
     setMedicalCertificate(null);
     router.push("/dashboard");
@@ -474,20 +515,42 @@ export default function HealthSurvey() {
             </div>
           </div>
 
-          {/* Medical Certificate Upload - Conditional */}
-          {hasYesAnswer && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-amber-800 mb-3">
-                Medical Certificate Required
-              </h3>
-              <p className="text-amber-700 mb-4">
-                You answered &quot;Yes&quot; to at least one question. Please
-                upload a medical certificate attesting that you can practice
-                physical activity.
-              </p>
+          {/* Medical Certificate Upload - Always required now */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-amber-800 mb-3">
+              Required Document
+            </h3>
+            <p className="text-amber-700 mb-4">
+              Please upload a medical certificate or sports license attesting
+              that you can practice physical activity.
+            </p>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-amber-800 mb-2">
-                  Upload your medical certificate
+                  Document Type
+                </label>
+                <select
+                  id="documentType"
+                  name="documentType"
+                  value={formData.documentType}
+                  onChange={handleInputChange}
+                  disabled={surveyCompleted}
+                  className={`block w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    surveyCompleted ? "cursor-not-allowed opacity-50" : ""
+                  }`}
+                  required
+                >
+                  <option value="medical">Medical Certificate</option>
+                  <option value="sports">Sports License</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-amber-800 mb-2">
+                  Upload your{" "}
+                  {formData.documentType === "medical"
+                    ? "medical certificate"
+                    : "sports license"}
                 </label>
                 <div className="flex items-center">
                   <input
@@ -499,7 +562,7 @@ export default function HealthSurvey() {
                     className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
                       surveyCompleted ? "cursor-not-allowed opacity-50" : ""
                     }`}
-                    required={hasYesAnswer && !surveyCompleted}
+                    required={!surveyCompleted}
                   />
                 </div>
                 {medicalCertificate && (
@@ -512,7 +575,7 @@ export default function HealthSurvey() {
                 </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Important Notice */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -535,9 +598,10 @@ export default function HealthSurvey() {
                   Important Notice
                 </h3>
                 <p className="mt-1 text-sm text-yellow-700">
-                  {hasYesAnswer
-                    ? "Since you answered 'Yes' to at least one question, you must upload a medical certificate before proceeding. Please consult with your doctor to obtain proper medical clearance for physical activity."
-                    : "If you answered 'Yes' to any of these questions, please consult with your doctor before starting any new exercise program. Your safety is our top priority."}
+                  A valid medical certificate or sports license is required
+                  before you can start any training program. This ensures your
+                  safety and helps us create an appropriate training plan for
+                  you.
                 </p>
               </div>
             </div>
@@ -549,7 +613,9 @@ export default function HealthSurvey() {
               <p className="text-sm text-amber-600 mb-4 text-right">
                 {!allQuestionsAnswered
                   ? "Please answer all questions to continue."
-                  : "Please upload a medical certificate to submit the survey."}
+                  : !medicalCertificate
+                  ? "Please upload a required document to submit the survey."
+                  : ""}
               </p>
             )}
             <div className="flex justify-end space-x-4">
