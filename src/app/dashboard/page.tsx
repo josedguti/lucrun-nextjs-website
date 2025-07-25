@@ -42,10 +42,11 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchRunners = async () => {
       try {
-        // Get all user profiles
+        // Get all user profiles, excluding admin
         const { data: profiles, error: profileError } = await supabase
           .from("profiles")
           .select("id, first_name, last_name, email, profile_completed, created_at")
+          .neq("email", "luc.run.coach@gmail.com")
           .order("created_at", { ascending: false });
 
         if (profileError) {

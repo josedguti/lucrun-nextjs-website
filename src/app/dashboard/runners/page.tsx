@@ -53,7 +53,7 @@ export default function RunnersPage() {
   useEffect(() => {
     const fetchRunners = async () => {
       try {
-        // Get all user profiles with extended information
+        // Get all user profiles with extended information, excluding admin
         const { data: profiles, error: profileError } = await supabase
           .from("profiles")
           .select(`
@@ -61,6 +61,7 @@ export default function RunnersPage() {
             phone, date_of_birth, city, state, country,
             running_level, current_weekly_km, training_hours_per_week
           `)
+          .neq("email", "luc.run.coach@gmail.com")
           .order("created_at", { ascending: false });
 
         if (profileError) {
