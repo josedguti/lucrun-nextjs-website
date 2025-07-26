@@ -186,14 +186,14 @@ export default function HealthSurvey() {
 
       // Upload file to Supabase Storage
       let fileUrl = null;
-      let fileName = null;
+      const fileName = null;
 
       if (medicalCertificate) {
         // Make sure the path includes the user ID as a folder name first
         const fileName = `${Date.now()}-${medicalCertificate.name}`;
         const filePath = `${user.id}/${fileName}`; // This is the key change - put user.id as a folder
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("health_documents")
           .upload(filePath, medicalCertificate, {
             cacheControl: "3600",

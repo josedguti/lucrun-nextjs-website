@@ -30,7 +30,7 @@ interface RunnerProgress {
   profile: RunnerProfile;
   profileCompleted: boolean;
   healthSurveyCompleted: boolean;
-  programEnrolled: boolean;
+  programEnrolled: boolean | null;
   completionPercentage: number;
 }
 
@@ -137,7 +137,7 @@ function AdminDashboard() {
             Coach Dashboard
           </h1>
           <p className="text-lg text-gray-600">
-            Monitor your runners' progress and onboarding status
+            Monitor your runners&apos; progress and onboarding status
           </p>
         </div>
 
@@ -658,7 +658,7 @@ function DashboardContent() {
                   {successType === "health-survey" &&
                     "🎉 Health survey completed successfully! Another step towards your training journey."}
                   {successType === "program-enrollment" &&
-                    "🎉 Program enrollment successful! You're now ready to start your training journey."}
+                    "🎉 Program enrollment successful! You&apos;re now ready to start your training journey."}
                 </p>
               </div>
             </div>
@@ -704,7 +704,7 @@ function DashboardContent() {
           </div>
           <p className="text-sm text-gray-600 mt-2">
             {progressPercentage === 100
-              ? "🎉 Congratulations! You've completed all setup steps!"
+              ? "🎉 Congratulations! You&apos;ve completed all setup steps!"
               : `${Math.round(progressPercentage)}% complete`}
           </p>
         </div>
