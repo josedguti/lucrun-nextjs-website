@@ -17,106 +17,255 @@ interface ChecklistItem {
   locked?: boolean;
 }
 
-interface RunnerProfile {
+interface RunnerTile {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  profile_completed: boolean;
-  created_at: string;
+  name: string;
+  email: string;
+  program: string;
+  avatar: string;
+  status: "in-progress" | "today-session" | "ready";
+  completionSteps?: string[];
+  sessionTime?: string;
 }
 
-interface RunnerProgress {
-  profile: RunnerProfile;
-  profileCompleted: boolean;
-  healthSurveyCompleted: boolean;
-  programEnrolled: boolean | null;
-  completionPercentage: number;
+
+interface TrainingSession {
+  id: string;
+  title: string;
+  user_id: string;
+  session_date: string;
+  session_time?: string;
+  session_type: string;
+  is_completed: boolean;
+  user_name: string;
+  program_name: string;
 }
 
 function AdminDashboard() {
-  const [runners, setRunners] = useState<RunnerProgress[]>([]);
+  const [runnersInProgress, setRunnersInProgress] = useState<RunnerTile[]>([]);
+  const [runnersWithTodaySessions, setRunnersWithTodaySessions] = useState<
+    RunnerTile[]
+  >([]);
+  const [weekSessions, setWeekSessions] = useState<TrainingSession[]>([]);
+  const [nextWeekSessions, setNextWeekSessions] = useState<TrainingSession[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchRunners = async () => {
+    const fetchAdminData = async () => {
       try {
-        // Get all user profiles, excluding admin
+        setLoading(true);
+
+        // Get today's date and week range
+        const today = new Date();
+        const todayString = today.toISOString().split("T")[0];
+
+        // Get current week range (Monday to Sunday)
+        const currentWeekStart = new Date(today);
+        currentWeekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+        const currentWeekEnd = new Date(currentWeekStart);
+        currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+        // Get next week range
+        const nextWeekStart = new Date(currentWeekEnd);
+        nextWeekStart.setDate(currentWeekEnd.getDate() + 1);
+        const nextWeekEnd = new Date(nextWeekStart);
+        nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+
+        // 1. Fetch runners in progress (incomplete profiles)
         const { data: profiles, error: profileError } = await supabase
           .from("profiles")
-          .select("id, first_name, last_name, email, profile_completed, created_at")
+          .select(
+            `
+            id, first_name, last_name, email, profile_completed, created_at
+          `
+          )
           .neq("email", "luc.run.coach@gmail.com")
           .order("created_at", { ascending: false });
 
-        if (profileError) {
-          console.error("Error fetching profiles:", profileError);
-          setLoading(false);
-          return;
+        if (profileError) throw profileError;
+
+        const runnersProgressData: RunnerTile[] = [];
+        const runnersReadyForToday: RunnerTile[] = [];
+
+        for (const profile of profiles || []) {
+          // Check completion status
+          const { data: healthSurvey } = await supabase
+            .from("health_surveys")
+            .select("completed_at")
+            .eq("user_id", profile.id)
+            .single();
+
+          const { data: enrollments } = await supabase
+            .from("user_program_enrollments")
+            .select(
+              `
+              id, is_active,
+              training_programs(title)
+            `
+            )
+            .eq("user_id", profile.id)
+            .eq("is_active", true);
+
+          const profileCompleted = profile.profile_completed || false;
+          const healthCompleted = !!healthSurvey?.completed_at;
+          const programEnrolled = enrollments && enrollments.length > 0;
+
+          const runnerName =
+            profile.first_name && profile.last_name
+              ? `${profile.first_name} ${profile.last_name}`
+              : profile.first_name ||
+                profile.email?.split("@")[0] ||
+                "Unknown User";
+
+          const programName = 
+            Array.isArray(enrollments?.[0]?.training_programs) 
+              ? (enrollments[0].training_programs as { title: string }[])[0]?.title || "No Program"
+              : (enrollments?.[0]?.training_programs as unknown as { title: string })?.title || "No Program";
+          const avatar = profile.first_name
+            ? profile.first_name[0].toUpperCase()
+            : profile.email?.[0].toUpperCase() || "U";
+
+          // If not fully complete, add to in-progress
+          if (!profileCompleted || !healthCompleted || !programEnrolled) {
+            const completionSteps = [];
+            if (!profileCompleted) completionSteps.push("Profile");
+            if (!healthCompleted) completionSteps.push("Health Survey");
+            if (!programEnrolled) completionSteps.push("Program Selection");
+
+            runnersProgressData.push({
+              id: profile.id,
+              name: runnerName,
+              email: profile.email || "",
+              program: programName,
+              avatar,
+              status: "in-progress",
+              completionSteps,
+            });
+          } else {
+            // Check if they have sessions today
+            const { data: todaySessions } = await supabase
+              .from("training_sessions")
+              .select("id, session_time")
+              .eq("user_id", profile.id)
+              .eq("session_date", todayString);
+
+            if (todaySessions && todaySessions.length > 0) {
+              runnersReadyForToday.push({
+                id: profile.id,
+                name: runnerName,
+                email: profile.email || "",
+                program: programName,
+                avatar,
+                status: "today-session",
+                sessionTime: todaySessions[0].session_time || "08:00",
+              });
+            }
+          }
         }
 
-        if (!profiles) {
-          setLoading(false);
-          return;
-        }
+        setRunnersInProgress(runnersProgressData);
+        setRunnersWithTodaySessions(runnersReadyForToday);
 
-        // For each profile, check health survey and program enrollment
-        const runnersWithProgress = await Promise.all(
-          profiles.map(async (profile) => {
-            // Check health survey completion
-            const { data: healthSurvey } = await supabase
-              .from("health_surveys")
-              .select("completed_at")
-              .eq("user_id", profile.id)
-              .single();
+        // 2. Fetch current week sessions
+        const { data: currentWeekSessions, error: weekError } = await supabase
+          .from("training_sessions")
+          .select(
+            `
+            id, title, user_id, session_date, session_time, session_type, is_completed,
+            profiles(first_name, last_name, email)
+          `
+          )
+          .gte("session_date", currentWeekStart.toISOString().split("T")[0])
+          .lte("session_date", currentWeekEnd.toISOString().split("T")[0])
+          .order("session_date", { ascending: true });
 
-            // Check program enrollment
-            const { data: enrollments } = await supabase
-              .from("user_program_enrollments")
-              .select("id")
-              .eq("user_id", profile.id)
-              .eq("is_active", true);
+        if (weekError) throw weekError;
 
-            const profileCompleted = profile.profile_completed || false;
-            const healthSurveyCompleted = !!healthSurvey?.completed_at;
-            const programEnrolled = enrollments && enrollments.length > 0;
+        // 3. Fetch next week sessions for planning
+        const { data: nextWeekSessionsData, error: nextWeekError } =
+          await supabase
+            .from("training_sessions")
+            .select(
+              `
+            id, title, user_id, session_date, session_time, session_type, is_completed,
+            profiles(first_name, last_name, email)
+          `
+            )
+            .gte("session_date", nextWeekStart.toISOString().split("T")[0])
+            .lte("session_date", nextWeekEnd.toISOString().split("T")[0])
+            .order("session_date", { ascending: true });
 
-            let completedSteps = 0;
-            if (profileCompleted) completedSteps++;
-            if (healthSurveyCompleted) completedSteps++;
-            if (programEnrolled) completedSteps++;
+        if (nextWeekError) throw nextWeekError;
 
-            const completionPercentage = (completedSteps / 3) * 100;
+        // Format session data
+        const formatSessions = (
+          sessions: Record<string, unknown>[]
+        ): TrainingSession[] => {
+          return sessions.map((session) => ({
+            id: session.id as string,
+            title: session.title as string,
+            user_id: session.user_id as string,
+            session_date: session.session_date as string,
+            session_time: session.session_time as string,
+            session_type: session.session_type as string,
+            is_completed: session.is_completed as boolean,
+            user_name: (() => {
+              // Handle both array and object cases for profiles
+              const profile = Array.isArray(session.profiles) ? session.profiles[0] : session.profiles;
+              return profile?.first_name && profile?.last_name
+                ? `${profile.first_name} ${profile.last_name}`
+                : profile?.email?.split("@")[0] || "Unknown User";
+            })(),
+            program_name: "Program", // We can enhance this later if needed
+          }));
+        };
 
-            return {
-              profile,
-              profileCompleted,
-              healthSurveyCompleted,
-              programEnrolled,
-              completionPercentage,
-            };
-          })
-        );
-
-        setRunners(runnersWithProgress);
+        setWeekSessions(formatSessions(currentWeekSessions || []));
+        setNextWeekSessions(formatSessions(nextWeekSessionsData || []));
       } catch (error) {
-        console.error("Error in fetchRunners:", error);
+        console.error("Error fetching admin data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRunners();
+    fetchAdminData();
   }, [supabase]);
+
+  // Helper function to get week dates
+  const getWeekDates = () => {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  // Helper function to get sessions for a specific date
+  const getSessionsForDate = (date: Date) => {
+    const dateString = date.toISOString().split("T")[0];
+    return weekSessions.filter(
+      (session) => session.session_date === dateString
+    );
+  };
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading runner data...</p>
+              <p className="text-gray-600">Loading coach dashboard...</p>
             </div>
           </div>
         </div>
@@ -124,167 +273,255 @@ function AdminDashboard() {
     );
   }
 
-  const totalRunners = runners.length;
-  const activeRunners = runners.filter(r => r.completionPercentage > 0).length;
-  const completedRunners = runners.filter(r => r.completionPercentage === 100).length;
+  const weekDates = getWeekDates();
+  const today = new Date();
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto">
-        {/* Admin Header */}
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Coach Dashboard
           </h1>
           <p className="text-lg text-gray-600">
-            Monitor your runners&apos; progress and onboarding status
+            Monitor your runners and manage their training sessions
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-gray-900">{totalRunners}</p>
-                <p className="text-sm text-gray-600">Total Runners</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-gray-900">{activeRunners}</p>
-                <p className="text-sm text-gray-600">Active Runners</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-2xl font-bold text-gray-900">{completedRunners}</p>
-                <p className="text-sm text-gray-600">Setup Complete</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Runners Table */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Runner Progress</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Runner
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Progress
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Joined
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {runners.map((runner) => (
-                  <tr key={runner.profile.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">
-                            {runner.profile.first_name 
-                              ? runner.profile.first_name.charAt(0).toUpperCase()
-                              : runner.profile.email?.charAt(0).toUpperCase() || 'U'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {runner.profile.first_name && runner.profile.last_name
-                              ? `${runner.profile.first_name} ${runner.profile.last_name}`
-                              : runner.profile.first_name || runner.profile.email?.split('@')[0] || 'Unknown User'}
-                          </div>
-                          <div className="text-sm text-gray-500">{runner.profile.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${runner.completionPercentage}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm text-gray-600 min-w-[3rem]">
-                          {Math.round(runner.completionPercentage)}%
+        {/* Section 1: Runners In Progress */}
+        <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Runners Completing Their Profile ({runnersInProgress.length})
+          </h2>
+          {runnersInProgress.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {runnersInProgress.map((runner) => (
+                <div
+                  key={runner.id}
+                  className="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-400"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <span className="text-yellow-700 font-semibold">
+                          {runner.avatar}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {runner.profileCompleted && <span className="text-green-600 mr-2">Profile ✓</span>}
-                        {runner.healthSurveyCompleted && <span className="text-green-600 mr-2">Health ✓</span>}
-                        {runner.programEnrolled && <span className="text-green-600 mr-2">Program ✓</span>}
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {runner.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {runner.program}
+                        </p>
+                        <p className="text-xs text-gray-500">{runner.email}</p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        runner.completionPercentage === 100
-                          ? 'bg-green-100 text-green-800'
-                          : runner.completionPercentage > 0
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {runner.completionPercentage === 100
-                          ? 'Ready'
-                          : runner.completionPercentage > 0
-                          ? 'In Progress'
-                          : 'Not Started'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(runner.profile.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-600 mb-2">Pending:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {runner.completionSteps?.map((step) => (
+                        <span
+                          key={step}
+                          className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
+                        >
+                          {step}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-6 text-center">
+              <p className="text-gray-500">
+                All runners have completed their setup! 🎉
+              </p>
+            </div>
+          )}
+        </section>
 
-        {runners.length === 0 && (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No runners yet</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Runners will appear here as they sign up and complete their profiles.
-            </p>
+        {/* Section 2: Runners With Sessions Today */}
+        <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Runners With Sessions Today ({runnersWithTodaySessions.length})
+          </h2>
+          {runnersWithTodaySessions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {runnersWithTodaySessions.map((runner) => (
+                <div
+                  key={runner.id}
+                  className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-400"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-700 font-semibold">
+                          {runner.avatar}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {runner.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {runner.program}
+                        </p>
+                        <p className="text-xs text-gray-500">{runner.email}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                      {runner.sessionTime}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow p-6 text-center">
+              <p className="text-gray-500">No sessions scheduled for today</p>
+            </div>
+          )}
+        </section>
+
+        {/* Section 3: Weekly Calendar View */}
+        <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            This Week&apos;s Training Sessions
+          </h2>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="grid grid-cols-7 border-b">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                <div
+                  key={day}
+                  className="p-3 text-center font-medium text-gray-700 border-r last:border-r-0"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 min-h-[200px]">
+              {weekDates.map((date, index) => {
+                const sessionsForDate = getSessionsForDate(date);
+                const isToday = date.toDateString() === today.toDateString();
+
+                return (
+                  <div
+                    key={index}
+                    className={`p-2 border-r border-b last:border-r-0 ${
+                      isToday ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-gray-900 mb-2">
+                      {date.getDate()}
+                    </div>
+                    <div className="space-y-1">
+                      {sessionsForDate.slice(0, 3).map((session) => (
+                        <div
+                          key={session.id}
+                          className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded truncate"
+                          title={`${session.user_name}: ${session.title}`}
+                        >
+                          {session.user_name.split(" ")[0]}
+                        </div>
+                      ))}
+                      {sessionsForDate.length > 3 && (
+                        <div className="text-xs text-gray-500">
+                          +{sessionsForDate.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        )}
+        </section>
+
+        {/* Section 4: Planning for Next Week */}
+        <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Planning for Next Week ({nextWeekSessions.length} sessions
+            scheduled)
+          </h2>
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-gray-900">Upcoming Sessions</h3>
+                <Link
+                  href="/dashboard/calendar"
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  Create New Sessions →
+                </Link>
+              </div>
+            </div>
+            {nextWeekSessions.length > 0 ? (
+              <div className="divide-y divide-gray-200">
+                {nextWeekSessions.slice(0, 5).map((session) => (
+                  <div key={session.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {session.user_name}
+                        </h4>
+                        <p className="text-sm text-gray-600">{session.title}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {new Date(session.session_date).toLocaleDateString(
+                            "en-US",
+                            {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {session.session_time || "08:00"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {nextWeekSessions.length > 5 && (
+                  <div className="p-4 text-center text-sm text-gray-500">
+                    And {nextWeekSessions.length - 5} more sessions...
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 text-center">
+                <p className="text-gray-500 mb-4">
+                  No sessions planned for next week yet
+                </p>
+                <Link
+                  href="/dashboard/calendar"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Create Sessions
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </DashboardLayout>
   );
@@ -294,7 +531,7 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { isAdmin } = useAuth();
-  
+
   // All hooks must be called before any conditional returns
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successType, setSuccessType] = useState<string | null>(null);

@@ -333,12 +333,12 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.profiles (id, first_name, last_name, email)
-  VALUES (new.id, new.raw_user_meta_data->>'first_name', new.raw_user_meta_data->>'last_name', new.email);
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'last_name', NEW.email);
   
   INSERT INTO public.dashboard_progress (user_id)
-  VALUES (new.id);
+  VALUES (NEW.id);
   
-  RETURN new;
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -367,29 +367,69 @@ CREATE TRIGGER dashboard_progress_updated_at BEFORE UPDATE ON dashboard_progress
 -- Create function to update dashboard progress
 CREATE OR REPLACE FUNCTION public.update_dashboard_progress()
 RETURNS trigger AS $$
+DECLARE
+  target_user_id UUID;
+  rows_affected INTEGER;
+  new_profile_completed BOOLEAN;
+  new_completed_at TIMESTAMP WITH TIME ZONE;
+  new_is_active BOOLEAN;
 BEGIN
+  -- Extract values from NEW record to avoid field reference issues
+  IF TG_TABLE_NAME = 'profiles' THEN
+    target_user_id := NEW.id;
+    new_profile_completed := NEW.profile_completed;
+  ELSIF TG_TABLE_NAME = 'health_surveys' THEN
+    target_user_id := NEW.user_id;
+    new_completed_at := NEW.completed_at;
+  ELSIF TG_TABLE_NAME = 'user_program_enrollments' THEN
+    target_user_id := NEW.user_id;
+    new_is_active := NEW.is_active;
+  ELSE
+    target_user_id := NEW.user_id;
+  END IF;
+  
+  -- Ensure dashboard_progress record exists for the user
+  INSERT INTO dashboard_progress (user_id)
+  VALUES (target_user_id)
+  ON CONFLICT (user_id) DO NOTHING;
+  
   -- Update dashboard progress when profile is completed
-  IF TG_TABLE_NAME = 'profiles' AND NEW.profile_completed = TRUE THEN
+  IF TG_TABLE_NAME = 'profiles' AND new_profile_completed = TRUE THEN
     UPDATE dashboard_progress 
     SET profile_completed = TRUE, 
-        overall_progress = calculate_overall_progress(NEW.id)
-    WHERE user_id = NEW.id;
+        overall_progress = calculate_overall_progress(target_user_id)
+    WHERE user_id = target_user_id;
+    
+    GET DIAGNOSTICS rows_affected = ROW_COUNT;
+    IF rows_affected = 0 THEN
+      RAISE WARNING 'No dashboard_progress record found for user_id: %', target_user_id;
+    END IF;
   END IF;
   
   -- Update dashboard progress when health survey is completed
-  IF TG_TABLE_NAME = 'health_surveys' AND NEW.completed_at IS NOT NULL THEN
+  IF TG_TABLE_NAME = 'health_surveys' AND new_completed_at IS NOT NULL THEN
     UPDATE dashboard_progress 
     SET health_survey_completed = TRUE,
-        overall_progress = calculate_overall_progress(NEW.user_id)
-    WHERE user_id = NEW.user_id;
+        overall_progress = calculate_overall_progress(target_user_id)
+    WHERE user_id = target_user_id;
+    
+    GET DIAGNOSTICS rows_affected = ROW_COUNT;
+    IF rows_affected = 0 THEN
+      RAISE WARNING 'No dashboard_progress record found for user_id: %', target_user_id;
+    END IF;
   END IF;
   
   -- Update dashboard progress when program is enrolled
-  IF TG_TABLE_NAME = 'user_program_enrollments' AND NEW.is_active = TRUE THEN
+  IF TG_TABLE_NAME = 'user_program_enrollments' AND new_is_active = TRUE THEN
     UPDATE dashboard_progress 
     SET program_selected = TRUE,
-        overall_progress = calculate_overall_progress(NEW.user_id)
-    WHERE user_id = NEW.user_id;
+        overall_progress = calculate_overall_progress(target_user_id)
+    WHERE user_id = target_user_id;
+    
+    GET DIAGNOSTICS rows_affected = ROW_COUNT;
+    IF rows_affected = 0 THEN
+      RAISE WARNING 'No dashboard_progress record found for user_id: %', target_user_id;
+    END IF;
   END IF;
   
   RETURN NEW;
@@ -402,16 +442,40 @@ RETURNS INTEGER AS $$
 DECLARE
   progress_count INTEGER := 0;
   total_steps INTEGER := 5;
+  profile_complete BOOLEAN := FALSE;
+  health_complete BOOLEAN := FALSE;
+  program_complete BOOLEAN := FALSE;
+  calendar_complete BOOLEAN := FALSE;
+  videos_complete BOOLEAN := FALSE;
 BEGIN
+  -- Get dashboard progress for the user
   SELECT 
-    (CASE WHEN profile_completed THEN 1 ELSE 0 END) +
-    (CASE WHEN health_survey_completed THEN 1 ELSE 0 END) +
-    (CASE WHEN program_selected THEN 1 ELSE 0 END) +
-    (CASE WHEN calendar_setup THEN 1 ELSE 0 END) +
-    (CASE WHEN videos_unlocked THEN 1 ELSE 0 END)
-  INTO progress_count
+    COALESCE(profile_completed, FALSE),
+    COALESCE(health_survey_completed, FALSE),
+    COALESCE(program_selected, FALSE),
+    COALESCE(calendar_setup, FALSE),
+    COALESCE(videos_unlocked, FALSE)
+  INTO 
+    profile_complete,
+    health_complete,
+    program_complete,
+    calendar_complete,
+    videos_complete
   FROM dashboard_progress
   WHERE user_id = user_uuid;
+  
+  -- If no dashboard progress record exists, return 0
+  IF NOT FOUND THEN
+    RETURN 0;
+  END IF;
+  
+  -- Calculate progress count
+  progress_count := 
+    (CASE WHEN profile_complete THEN 1 ELSE 0 END) +
+    (CASE WHEN health_complete THEN 1 ELSE 0 END) +
+    (CASE WHEN program_complete THEN 1 ELSE 0 END) +
+    (CASE WHEN calendar_complete THEN 1 ELSE 0 END) +
+    (CASE WHEN videos_complete THEN 1 ELSE 0 END);
   
   RETURN (progress_count * 100) / total_steps;
 END;
@@ -447,3 +511,51 @@ CREATE POLICY "Allow users to delete their own health documents"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'health_documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Create function for safe program enrollment
+CREATE OR REPLACE FUNCTION public.enroll_user_in_program(
+  user_uuid UUID,
+  program_uuid UUID
+)
+RETURNS JSON AS $$
+DECLARE
+  enrollment_id UUID;
+  profile_complete BOOLEAN := FALSE;
+BEGIN
+  -- Check if user profile is completed
+  SELECT profile_completed INTO profile_complete
+  FROM profiles 
+  WHERE id = user_uuid;
+  
+  -- If profile not completed, update it
+  IF NOT profile_complete THEN
+    UPDATE profiles 
+    SET profile_completed = TRUE 
+    WHERE id = user_uuid;
+  END IF;
+  
+  -- Insert enrollment
+  INSERT INTO user_program_enrollments (user_id, program_id, is_active)
+  VALUES (user_uuid, program_uuid, TRUE)
+  ON CONFLICT (user_id, program_id) 
+  DO UPDATE SET is_active = TRUE, updated_at = NOW()
+  RETURNING id INTO enrollment_id;
+  
+  -- Return success response
+  RETURN json_build_object(
+    'success', true,
+    'message', 'Successfully enrolled in program',
+    'enrollment_id', enrollment_id
+  );
+  
+EXCEPTION WHEN OTHERS THEN
+  -- Return error response
+  RETURN json_build_object(
+    'success', false,
+    'error', SQLERRM
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.enroll_user_in_program(UUID, UUID) TO authenticated;

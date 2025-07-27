@@ -1,8 +1,8 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import EmojiPicker from "emoji-picker-react";
 
@@ -21,8 +21,9 @@ interface TrainingSession {
   user_id?: string; // Add user_id for admin operations
 }
 
-export default function Calendar() {
+function CalendarContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -198,6 +199,14 @@ export default function Calendar() {
 
     loadUserAndSessions();
   }, [router, supabase]);
+
+  // Handle URL parameters for runner filtering
+  useEffect(() => {
+    const runnerParam = searchParams.get('runner');
+    if (runnerParam && currentUser?.email === "luc.run.coach@gmail.com") {
+      setSelectedRunnerFilter(runnerParam);
+    }
+  }, [searchParams, currentUser]);
 
   // Helper function to convert local session to database format
   const sessionToDbFormat = (
@@ -1486,7 +1495,7 @@ export default function Calendar() {
                   <button
                     type="submit"
                     disabled={saving}
-                    onClick={(e) => {
+                    onClick={() => {
                       console.log('Create button clicked');
                       console.log('Form data:', newSession);
                       // Don't prevent default - let form submission happen
@@ -1836,5 +1845,13 @@ export default function Calendar() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function Calendar() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CalendarContent />
+    </Suspense>
   );
 }

@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
   const router = useRouter();
-  
+
   const isAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } = await supabase.auth.getUser();
         setUser(user);
       } catch (error) {
-        // Ignore auth errors for unauthenticated users
         setUser(null);
+        console.error("Error fetching user:", error);
       } finally {
         setLoading(false);
       }

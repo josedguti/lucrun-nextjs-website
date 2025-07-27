@@ -343,39 +343,52 @@ export default function Programs() {
         return;
       }
 
-      // First, get the actual program ID from the training_programs table
-      const { data: program, error: programError } = await supabase
-        .from("training_programs")
-        .select("id")
-        .eq("program_type", programId)
-        .single();
+      // Use RPC function to handle enrollment with proper database setup
+      const { data, error: rpcError } = await supabase.rpc('enroll_user_in_program', {
+        p_user_id: user.id,
+        p_program_type: programId
+      });
 
-      if (programError) {
-        console.error("Error finding program:", programError);
-        throw new Error("Program not found");
+      if (rpcError) {
+        console.error("Error enrolling via RPC:", rpcError);
+        
+        // Fallback to direct insertion approach
+        console.log("Attempting fallback enrollment method...");
+        
+        // Get the program ID
+        const { data: program, error: programError } = await supabase
+          .from("training_programs")
+          .select("id")
+          .eq("program_type", programId)
+          .single();
+
+        if (programError) {
+          console.error("Error finding program:", programError);
+          throw new Error("Program not found");
+        }
+
+        // Try direct insertion with minimal data
+        const { data: enrollment, error: enrollmentError } = await supabase
+          .from("user_program_enrollments")
+          .insert({
+            user_id: user.id,
+            program_id: program.id,
+            is_active: true,
+            progress_percentage: 0,
+          })
+          .select();
+
+        if (enrollmentError) {
+          console.error("Error creating enrollment:", enrollmentError);
+          throw new Error(
+            `Failed to enroll in program: ${enrollmentError.message}`
+          );
+        }
+
+        console.log("Successfully enrolled in program:", enrollment);
+      } else {
+        console.log("Successfully enrolled via RPC:", data);
       }
-
-      // Create enrollment record
-      const enrollmentData = {
-        user_id: user.id,
-        program_id: program.id,
-        is_active: true,
-        progress_percentage: 0,
-      };
-
-      const { data: enrollment, error: enrollmentError } = await supabase
-        .from("user_program_enrollments")
-        .insert(enrollmentData)
-        .select();
-
-      if (enrollmentError) {
-        console.error("Error creating enrollment:", enrollmentError);
-        throw new Error(
-          `Failed to enroll in program: ${enrollmentError.message}`
-        );
-      }
-
-      console.log("Successfully enrolled in program:", enrollment);
 
       // Redirect to dashboard with success indication
       router.push("/dashboard?success=program-enrollment");
