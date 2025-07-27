@@ -18,6 +18,7 @@ interface TrainingSession {
   hasConstraints?: boolean;
   rpe?: string;
   comments?: string;
+  user_id?: string; // Add user_id for admin operations
 }
 
 export default function Calendar() {
@@ -181,6 +182,7 @@ export default function Calendar() {
               hasConstraints: session.has_constraints || false,
               rpe: session.rpe?.toString() || undefined,
               comments: session.comments || undefined,
+              user_id: session.user_id, // Include user_id for admin operations
             };
           }
         );
@@ -281,10 +283,17 @@ export default function Calendar() {
     return days;
   };
 
-  // Get sessions for a specific date
+  // Get sessions for a specific date (with optional runner filter)
   const getSessionsForDate = (date: Date) => {
     const dateString = date.toISOString().split("T")[0];
-    return trainingSessions.filter((session) => session.date === dateString);
+    let filteredSessions = trainingSessions.filter((session) => session.date === dateString);
+    
+    // Apply runner filter for admin
+    if (currentUser?.email === "luc.run.coach@gmail.com" && selectedRunnerFilter !== "all") {
+      filteredSessions = filteredSessions.filter((session) => session.user_id === selectedRunnerFilter);
+    }
+    
+    return filteredSessions;
   };
 
   // Session type colors
@@ -486,15 +495,30 @@ export default function Calendar() {
   };
 
   const handleCreateSession = async (e: React.FormEvent) => {
+    console.log("handleCreateSession called!");
     e.preventDefault();
-    if (!newSession.title.trim() || !currentUser) return;
+    
+    if (!currentUser) {
+      console.log("No current user");
+      return;
+    }
+    
+    if (!newSession.title.trim()) {
+      console.log("No session title");
+      return;
+    }
 
     // For admin users, check if a runner is selected
     const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
+    console.log("Is admin:", isAdmin);
+    
     if (isAdmin && !newSession.selectedRunnerId) {
+      console.log("Admin but no runner selected");
       setError("Please select a runner to assign this session to");
       return;
     }
+
+    console.log("Creating session:", { newSession, isAdmin, targetUserId: isAdmin ? newSession.selectedRunnerId : currentUser.id });
 
     try {
       setSaving(true);
@@ -520,7 +544,8 @@ export default function Calendar() {
 
       if (error) {
         console.error("Error creating session:", error);
-        setError("Failed to create session");
+        console.error("Session data:", sessionData);
+        setError(`Failed to create session: ${error.message}`);
         return;
       }
 
@@ -580,34 +605,55 @@ export default function Calendar() {
       setSaving(true);
       setError(null);
 
+      // For admin users, don't filter by currentUser.id since they can edit any session
+      const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
+      
+      // We need to get the original user_id from the session
+      // For admin users, we keep the original session's user_id
+      // For regular users, we use their own ID
+      const targetUserId = isAdmin 
+        ? selectedSession.user_id || currentUser.id // Get from original session or fallback
+        : currentUser.id;
+
       const sessionData = sessionToDbFormat(
         {
           ...editSession,
           time: selectedSession.time, // Keep existing time
           duration: selectedSession.duration, // Keep existing duration
         },
-        currentUser.id
+        targetUserId
       );
 
-      const { error } = await supabase
+      console.log("Updating session:", { sessionId: selectedSession.id, sessionData, isAdmin });
+
+      // Update the session - admin can update any session, regular users only their own
+      let updateQuery = supabase
         .from("training_sessions")
         .update(sessionData)
-        .eq("id", selectedSession.id)
-        .eq("user_id", currentUser.id);
+        .eq("id", selectedSession.id);
+
+      // Only add user_id filter for non-admin users
+      if (!isAdmin) {
+        updateQuery = updateQuery.eq("user_id", currentUser.id);
+      }
+
+      const { error, data } = await updateQuery;
 
       if (error) {
         console.error("Error updating session:", error);
-        setError("Failed to update session");
+        setError(`Failed to update session: ${error.message}`);
         return;
       }
 
-      // Update local state
+      console.log("Update successful:", data);
+
+      // Update local state with the corrected title format
       setTrainingSessions((prev) =>
         prev.map((session) =>
           session.id === selectedSession.id
             ? {
                 ...session,
-                title: editSession.title,
+                title: editSession.title, // Use the edited title (already includes runner name if admin)
                 type: editSession.type,
                 date: editSession.date,
                 description: editSession.description,
@@ -669,6 +715,9 @@ export default function Calendar() {
     useState(false);
   const [showEditEmojiPickerComments, setShowEditEmojiPickerComments] =
     useState(false);
+
+  // Filter state for admin
+  const [selectedRunnerFilter, setSelectedRunnerFilter] = useState<string>("all");
 
   // Handle emoji selection for new session
   const handleEmojiClickDescription = (emojiData: { emoji: string }) => {
@@ -769,6 +818,26 @@ export default function Calendar() {
 
           {/* View Controls */}
           <div className="flex items-center gap-3">
+            {/* Runner Filter for Admin */}
+            {currentUser?.email === "luc.run.coach@gmail.com" && (
+              <div className="bg-white rounded-lg border shadow-sm">
+                <select
+                  value={selectedRunnerFilter}
+                  onChange={(e) => setSelectedRunnerFilter(e.target.value)}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Runners</option>
+                  {runners.map((runner) => (
+                    <option key={runner.id} value={runner.id}>
+                      {runner.first_name && runner.last_name
+                        ? `${runner.first_name} ${runner.last_name}`
+                        : runner.first_name || runner.email?.split('@')[0] || 'Unknown User'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* View Mode Toggle */}
             <div className="flex bg-white rounded-lg border shadow-sm">
               <button
@@ -927,28 +996,30 @@ export default function Calendar() {
                         >
                           {date.getDate()}
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openCreateModal(date);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
-                          title="Add session"
-                        >
-                          <svg
-                            className="w-3 h-3 text-gray-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                        {currentUser?.email === "luc.run.coach@gmail.com" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openCreateModal(date);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
+                            title="Add session"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                            />
-                          </svg>
-                        </button>
+                            <svg
+                              className="w-3 h-3 text-gray-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                              />
+                            </svg>
+                          </button>
+                        )}
                       </div>
 
                       {/* Training Sessions */}
@@ -960,9 +1031,7 @@ export default function Calendar() {
                             onDragStart={(e) => handleDragStart(e, session)}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (currentUser?.email !== "luc.run.coach@gmail.com") {
-                                openSessionModal(session);
-                              }
+                              openSessionModal(session);
                             }}
                             className={`text-xs px-1 py-0.5 rounded border cursor-pointer hover:shadow-sm transition-shadow truncate ${getSessionColor(
                               session.type
@@ -1028,28 +1097,30 @@ export default function Calendar() {
                         >
                           {date.getDate()}
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openCreateModal(date);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
-                          title="Add session"
-                        >
-                          <svg
-                            className="w-4 h-4 text-gray-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                        {currentUser?.email === "luc.run.coach@gmail.com" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openCreateModal(date);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
+                            title="Add session"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                            />
-                          </svg>
-                        </button>
+                            <svg
+                              className="w-4 h-4 text-gray-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                              />
+                            </svg>
+                          </button>
+                        )}
                       </div>
 
                       {/* Training Sessions */}
@@ -1061,9 +1132,7 @@ export default function Calendar() {
                             onDragStart={(e) => handleDragStart(e, session)}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (currentUser?.email !== "luc.run.coach@gmail.com") {
-                                openSessionModal(session);
-                              }
+                              openSessionModal(session);
                             }}
                             className={`text-xs px-2 py-1 rounded border cursor-pointer hover:shadow-sm transition-shadow truncate ${getSessionColor(
                               session.type
@@ -1140,7 +1209,11 @@ export default function Calendar() {
                 </button>
               </div>
 
-              <form onSubmit={handleCreateSession} className="p-6">
+              <form onSubmit={(e) => {
+                console.log('Form submitted - calling handleCreateSession');
+                e.preventDefault();
+                handleCreateSession(e);
+              }} className="p-6">
                 {/* Runner Selection for Admin */}
                 {currentUser?.email === "luc.run.coach@gmail.com" && (
                   <div className="mb-4">
@@ -1183,13 +1256,14 @@ export default function Calendar() {
                     </label>
                     <select
                       value={newSession.type}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        console.log('Session type changed:', e.target.value);
                         setNewSession({
                           ...newSession,
                           type: e.target.value as TrainingSession["type"],
                           title: e.target.value, // Set title to match the type
-                        })
-                      }
+                        });
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     >
                       <option value="speed">Speed Session</option>
@@ -1268,6 +1342,7 @@ export default function Calendar() {
                           onChange={() =>
                             setNewSession({ ...newSession, isCompleted: true })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Oui
@@ -1280,6 +1355,7 @@ export default function Calendar() {
                           onChange={() =>
                             setNewSession({ ...newSession, isCompleted: false })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Non
@@ -1304,6 +1380,7 @@ export default function Calendar() {
                               hasConstraints: true,
                             })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Oui
@@ -1319,6 +1396,7 @@ export default function Calendar() {
                               hasConstraints: false,
                             })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Non
@@ -1339,9 +1417,10 @@ export default function Calendar() {
                       onChange={(e) =>
                         setNewSession({ ...newSession, rpe: e.target.value })
                       }
+                      disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${getRpeBackgroundColor(
                         newSession.rpe
-                      )}`}
+                      )} ${currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     >
                       <option value="">Sélectionner</option>
                       <option value="1">1 - 😌 Très facile</option>
@@ -1369,20 +1448,25 @@ export default function Calendar() {
                       setNewSession({ ...newSession, comments: e.target.value })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
+                      currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                    }`}
                   />
-                  <div className="flex justify-start mt-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowEmojiPickerComments(!showEmojiPickerComments)
-                      }
-                      className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
-                      aria-label="Add emoji"
-                    >
-                      <span className="text-sm mr-1">😊</span>
-                    </button>
-                  </div>
+                  {currentUser?.email !== "luc.run.coach@gmail.com" && (
+                    <div className="flex justify-start mt-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowEmojiPickerComments(!showEmojiPickerComments)
+                        }
+                        className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                        aria-label="Add emoji"
+                      >
+                        <span className="text-sm mr-1">😊</span>
+                      </button>
+                    </div>
+                  )}
                   {showEmojiPickerComments && (
                     <div className="absolute z-10 mt-1 left-0">
                       <EmojiPicker onEmojiClick={handleEmojiClickComments} />
@@ -1402,6 +1486,11 @@ export default function Calendar() {
                   <button
                     type="submit"
                     disabled={saving}
+                    onClick={(e) => {
+                      console.log('Create button clicked');
+                      console.log('Form data:', newSession);
+                      // Don't prevent default - let form submission happen
+                    }}
                     className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
                     {saving && (
@@ -1452,14 +1541,27 @@ export default function Calendar() {
                     </label>
                     <select
                       value={editSession.type}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        // For admin users, preserve the original title structure with runner name
+                        let newTitle = e.target.value;
+                        if (currentUser?.email === "luc.run.coach@gmail.com" && selectedSession) {
+                          const originalTitle = selectedSession.title;
+                          // Check if the original title contains a colon (indicating it has a runner name)
+                          if (originalTitle.includes(':')) {
+                            const runnerName = originalTitle.split(':')[0];
+                            newTitle = `${runnerName}: ${e.target.value}`;
+                          }
+                        }
                         setEditSession({
                           ...editSession,
                           type: e.target.value as TrainingSession["type"],
-                          title: e.target.value, // Set title to match the type
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          title: newTitle,
+                        });
+                      }}
+                      disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
+                        currentUser?.email !== "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
                     >
                       <option value="speed">Speed Session</option>
                       <option value="recovery">Recovery Run</option>
@@ -1478,7 +1580,10 @@ export default function Calendar() {
                       onChange={(e) =>
                         setEditSession({ ...editSession, date: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
+                        currentUser?.email !== "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                      }`}
                       required
                     />
                   </div>
@@ -1498,21 +1603,26 @@ export default function Calendar() {
                       })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
+                      currentUser?.email !== "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                    }`}
                   />
                   <div className="flex justify-start mt-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowEditEmojiPickerDescription(
-                          !showEditEmojiPickerDescription
-                        )
-                      }
-                      className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
-                      aria-label="Add emoji"
-                    >
-                      <span className="text-sm mr-1">😊</span>
-                    </button>
+                    {currentUser?.email === "luc.run.coach@gmail.com" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowEditEmojiPickerDescription(
+                            !showEditEmojiPickerDescription
+                          )
+                        }
+                        className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                        aria-label="Add emoji"
+                      >
+                        <span className="text-sm mr-1">😊</span>
+                      </button>
+                    )}
                   </div>
                   {showEditEmojiPickerDescription && (
                     <div className="absolute z-10 mt-1 left-0">
@@ -1542,6 +1652,7 @@ export default function Calendar() {
                               isCompleted: true,
                             })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Oui
@@ -1557,6 +1668,7 @@ export default function Calendar() {
                               isCompleted: false,
                             })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Non
@@ -1581,6 +1693,7 @@ export default function Calendar() {
                               hasConstraints: true,
                             })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Oui
@@ -1596,6 +1709,7 @@ export default function Calendar() {
                               hasConstraints: false,
                             })
                           }
+                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                           className="mr-2"
                         />
                         Non
@@ -1616,9 +1730,10 @@ export default function Calendar() {
                       onChange={(e) =>
                         setEditSession({ ...editSession, rpe: e.target.value })
                       }
+                      disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${getRpeBackgroundColor(
                         editSession.rpe
-                      )}`}
+                      )} ${currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     >
                       <option value="">Sélectionner</option>
                       <option value="1">1 - 😌 Très facile</option>
@@ -1649,21 +1764,26 @@ export default function Calendar() {
                       })
                     }
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
+                      currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                    }`}
                   />
                   <div className="flex justify-start mt-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowEditEmojiPickerComments(
-                          !showEditEmojiPickerComments
-                        )
-                      }
-                      className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
-                      aria-label="Add emoji"
-                    >
-                      <span className="text-sm mr-1">😊</span>
-                    </button>
+                    {currentUser?.email !== "luc.run.coach@gmail.com" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowEditEmojiPickerComments(
+                            !showEditEmojiPickerComments
+                          )
+                        }
+                        className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                        aria-label="Add emoji"
+                      >
+                        <span className="text-sm mr-1">😊</span>
+                      </button>
+                    )}
                   </div>
                   {showEditEmojiPickerComments && (
                     <div className="absolute z-10 mt-1 left-0">
@@ -1676,18 +1796,20 @@ export default function Calendar() {
 
                 {/* Action Buttons */}
                 <div className="flex justify-between">
-                  <button
-                    type="button"
-                    onClick={handleDeleteSession}
-                    disabled={saving}
-                    className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    {saving && (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                    )}
-                    <span>{saving ? "Deleting..." : "Supprimer"}</span>
-                  </button>
-                  <div className="flex gap-3">
+                  {currentUser?.email === "luc.run.coach@gmail.com" && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteSession}
+                      disabled={saving}
+                      className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {saving && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                      )}
+                      <span>{saving ? "Deleting..." : "Supprimer"}</span>
+                    </button>
+                  )}
+                  <div className={`flex gap-3 ${currentUser?.email !== "luc.run.coach@gmail.com" ? "ml-auto" : ""}`}>
                     <button
                       type="button"
                       onClick={closeSessionModal}

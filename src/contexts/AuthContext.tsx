@@ -27,11 +27,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial user
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUser(user);
+      } catch (error) {
+        // Ignore auth errors for unauthenticated users
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getUser();
@@ -39,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_, session) => {
       setUser(session?.user || null);
       setLoading(false);
     });
