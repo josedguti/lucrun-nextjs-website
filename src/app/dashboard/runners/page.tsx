@@ -53,10 +53,6 @@ interface RunnerDetail {
 export default function RunnersPage() {
   const [runners, setRunners] = useState<RunnerDetail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRunner, setSelectedRunner] = useState<RunnerDetail | null>(
-    null
-  );
-  const [showDetails, setShowDetails] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -162,13 +158,17 @@ export default function RunnersPage() {
   };
 
   const handleViewProfile = (runner: RunnerDetail) => {
-    setSelectedRunner(runner);
-    setShowDetails(true);
+    router.push(`/dashboard/profile?userId=${runner.profile.id}`);
   };
 
   const handleViewCalendar = (runner: RunnerDetail) => {
     // Navigate to calendar page with runner filter
     router.push(`/dashboard/calendar?runner=${runner.profile.id}`);
+  };
+
+  const handleViewHealthSurvey = (runner: RunnerDetail) => {
+    // Navigate to health survey page with user ID parameter
+    router.push(`/dashboard/health-survey?userId=${runner.profile.id}`);
   };
 
   if (loading) {
@@ -306,13 +306,13 @@ export default function RunnersPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => handleViewProfile(runner)}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+                    className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
                   >
                     <svg
-                      className="w-4 h-4 mr-2"
+                      className="w-3 h-3 mr-1"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -328,10 +328,10 @@ export default function RunnersPage() {
                   </button>
                   <button
                     onClick={() => handleViewCalendar(runner)}
-                    className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                    className="bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
                   >
                     <svg
-                      className="w-4 h-4 mr-2"
+                      className="w-3 h-3 mr-1"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -344,6 +344,25 @@ export default function RunnersPage() {
                       />
                     </svg>
                     Calendar
+                  </button>
+                  <button
+                    onClick={() => handleViewHealthSurvey(runner)}
+                    className="bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors duration-200 flex items-center justify-center"
+                  >
+                    <svg
+                      className="w-3 h-3 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Health
                   </button>
                 </div>
 
@@ -383,240 +402,6 @@ export default function RunnersPage() {
           </div>
         )}
 
-        {/* Runner Details Modal */}
-        {showDetails && selectedRunner && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Runner Details
-                </h3>
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="p-6 space-y-6">
-                {/* Personal Information */}
-                <div>
-                  <h4 className="text-md font-semibold text-gray-900 mb-3">
-                    Personal Information
-                  </h4>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
-                    <div>
-                      <span className="font-medium text-gray-900">Name:</span>{" "}
-                      {selectedRunner.profile.first_name &&
-                      selectedRunner.profile.last_name
-                        ? `${selectedRunner.profile.first_name} ${selectedRunner.profile.last_name}`
-                        : "Not provided"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">Email:</span>{" "}
-                      {selectedRunner.profile.email}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">Phone:</span>{" "}
-                      {selectedRunner.profile.phone || "Not provided"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Date of Birth:
-                      </span>{" "}
-                      {selectedRunner.profile.date_of_birth || "Not provided"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Location:
-                      </span>{" "}
-                      {selectedRunner.profile.city
-                        ? `${selectedRunner.profile.city}, ${selectedRunner.profile.state}, ${selectedRunner.profile.country}`
-                        : "Not provided"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">Joined:</span>{" "}
-                      {new Date(
-                        selectedRunner.profile.created_at
-                      ).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Running Information */}
-                <div>
-                  <h4 className="text-md font-semibold text-gray-900 mb-3">
-                    Running Information
-                  </h4>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Running Level:
-                      </span>{" "}
-                      {selectedRunner.profile.running_level || "Not specified"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Weekly Distance:
-                      </span>{" "}
-                      {selectedRunner.profile.current_weekly_km
-                        ? `${selectedRunner.profile.current_weekly_km} km`
-                        : "Not specified"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Training Hours:
-                      </span>{" "}
-                      {selectedRunner.profile.training_hours_per_week
-                        ? `${selectedRunner.profile.training_hours_per_week} hours/week`
-                        : "Not specified"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Session Stats */}
-                <div>
-                  <h4 className="text-md font-semibold text-gray-900 mb-3">
-                    Training Progress
-                  </h4>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Total Sessions:
-                      </span>{" "}
-                      {selectedRunner.sessionCount}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Completed Sessions:
-                      </span>{" "}
-                      {selectedRunner.completedSessions}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        Completion Rate:
-                      </span>{" "}
-                      {selectedRunner.sessionCount > 0
-                        ? `${Math.round(
-                            (selectedRunner.completedSessions /
-                              selectedRunner.sessionCount) *
-                              100
-                          )}%`
-                        : "N/A"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Health Information */}
-                <div>
-                  <h4 className="text-md font-semibold text-gray-900 mb-3">
-                    Health Survey
-                  </h4>
-                  {selectedRunner.healthSurvey?.completed_at ? (
-                    <div className="space-y-3 text-sm text-blue-800">
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          Completed:
-                        </span>{" "}
-                        {new Date(
-                          selectedRunner.healthSurvey.completed_at
-                        ).toLocaleDateString()}
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          Current Injuries:
-                        </span>{" "}
-                        {selectedRunner.healthSurvey.current_injuries ||
-                          "None reported"}
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          Past Injuries:
-                        </span>{" "}
-                        {selectedRunner.healthSurvey.past_injuries ||
-                          "None reported"}
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          Medications:
-                        </span>{" "}
-                        {selectedRunner.healthSurvey.medications ||
-                          "None reported"}
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          Health Conditions:
-                        </span>{" "}
-                        {selectedRunner.healthSurvey.health_conditions ||
-                          "None reported"}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      Health survey not completed yet
-                    </p>
-                  )}
-                </div>
-
-                {/* Program Enrollments */}
-                <div>
-                  <h4 className="text-md font-semibold text-gray-900 mb-3">
-                    Program Enrollments
-                  </h4>
-                  {selectedRunner.programEnrollments.length > 0 ? (
-                    <div className="space-y-2 text-sm text-blue-800">
-                      {selectedRunner.programEnrollments.map((enrollment) => (
-                        <div
-                          key={enrollment.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="text-sm">
-                            <span className="font-medium text-gray-900">
-                              Program:
-                            </span>{" "}
-                            {enrollment.training_programs?.[0]?.title || `Program ID: ${enrollment.program_id}`}
-                          </div>
-                          <div className="text-sm text-gray-900">
-                            Enrolled:{" "}
-                            {new Date(
-                              enrollment.enrolled_at
-                            ).toLocaleDateString()}
-                          </div>
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              enrollment.is_active
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {enrollment.is_active ? "Active" : "Inactive"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      No program enrollments yet
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );

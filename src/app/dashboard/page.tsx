@@ -43,9 +43,6 @@ interface TrainingSession {
 
 function AdminDashboard() {
   const [runnersInProgress, setRunnersInProgress] = useState<RunnerTile[]>([]);
-  const [runnersWithTodaySessions, setRunnersWithTodaySessions] = useState<
-    RunnerTile[]
-  >([]);
   const [weekSessions, setWeekSessions] = useState<TrainingSession[]>([]);
   const [nextWeekSessions, setNextWeekSessions] = useState<TrainingSession[]>(
     []
@@ -88,7 +85,6 @@ function AdminDashboard() {
         if (profileError) throw profileError;
 
         const runnersProgressData: RunnerTile[] = [];
-        const runnersReadyForToday: RunnerTile[] = [];
 
         for (const profile of profiles || []) {
           // Check completion status
@@ -144,30 +140,10 @@ function AdminDashboard() {
               status: "in-progress",
               completionSteps,
             });
-          } else {
-            // Check if they have sessions today
-            const { data: todaySessions } = await supabase
-              .from("training_sessions")
-              .select("id, session_time")
-              .eq("user_id", profile.id)
-              .eq("session_date", todayString);
-
-            if (todaySessions && todaySessions.length > 0) {
-              runnersReadyForToday.push({
-                id: profile.id,
-                name: runnerName,
-                email: profile.email || "",
-                program: programName,
-                avatar,
-                status: "today-session",
-                sessionTime: todaySessions[0].session_time || "08:00",
-              });
-            }
           }
         }
 
         setRunnersInProgress(runnersProgressData);
-        setRunnersWithTodaySessions(runnersReadyForToday);
 
         // 2. Fetch current week sessions
         const { data: currentWeekSessions, error: weekError } = await supabase
@@ -258,6 +234,24 @@ function AdminDashboard() {
     );
   };
 
+  // Session type colors (matching calendar page)
+  const getSessionColor = (type: string) => {
+    switch (type) {
+      case "speed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "recovery":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "long-run":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "interval":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "tempo":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -344,66 +338,26 @@ function AdminDashboard() {
           )}
         </section>
 
-        {/* Section 2: Runners With Sessions Today */}
-        <section>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Runners With Sessions Today ({runnersWithTodaySessions.length})
-          </h2>
-          {runnersWithTodaySessions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {runnersWithTodaySessions.map((runner) => (
-                <div
-                  key={runner.id}
-                  className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-400"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <span className="text-green-700 font-semibold">
-                          {runner.avatar}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {runner.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {runner.program}
-                        </p>
-                        <p className="text-xs text-gray-500">{runner.email}</p>
-                      </div>
-                    </div>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                      {runner.sessionTime}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow p-6 text-center">
-              <p className="text-gray-500">No sessions scheduled for today</p>
-            </div>
-          )}
-        </section>
 
-        {/* Section 3: Weekly Calendar View */}
+        {/* Section 2: Weekly Calendar View */}
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             This Week&apos;s Training Sessions
           </h2>
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="grid grid-cols-7 border-b">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
+              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
                 <div
                   key={day}
-                  className="p-3 text-center font-medium text-gray-700 border-r last:border-r-0"
+                  className="p-3 text-center text-sm font-medium text-gray-600"
                 >
-                  {day}
+                  {day.slice(0, 3)}
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 min-h-[200px]">
+            {/* Week Days */}
+            <div className="grid grid-cols-7 gap-1 p-4">
               {weekDates.map((date, index) => {
                 const sessionsForDate = getSessionsForDate(date);
                 const isToday = date.toDateString() === today.toDateString();
@@ -411,26 +365,37 @@ function AdminDashboard() {
                 return (
                   <div
                     key={index}
-                    className={`p-2 border-r border-b last:border-r-0 ${
-                      isToday ? "bg-blue-50" : ""
+                    className={`h-32 border rounded-lg p-2 transition-colors relative ${
+                      isToday
+                        ? "bg-blue-50 border-blue-300"
+                        : "bg-white border-gray-200 hover:bg-gray-50"
                     }`}
                   >
-                    <div className="text-sm font-medium text-gray-900 mb-2">
-                      {date.getDate()}
+                    <div className="flex justify-between items-start mb-2">
+                      <div
+                        className={`text-lg font-semibold ${
+                          isToday ? "text-blue-600" : "text-gray-900"
+                        }`}
+                      >
+                        {date.getDate()}
+                      </div>
                     </div>
+                    {/* Training Sessions */}
                     <div className="space-y-1">
-                      {sessionsForDate.slice(0, 3).map((session) => (
+                      {sessionsForDate.slice(0, 2).map((session) => (
                         <div
                           key={session.id}
-                          className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded truncate"
-                          title={`${session.user_name}: ${session.title}`}
+                          className={`text-xs px-1 py-0.5 rounded border truncate ${getSessionColor(
+                            session.session_type || "recovery"
+                          )}`}
+                          title={`${session.user_name}: ${session.title} - ${session.session_time || ""}`}
                         >
                           {session.user_name.split(" ")[0]}
                         </div>
                       ))}
-                      {sessionsForDate.length > 3 && (
-                        <div className="text-xs text-gray-500">
-                          +{sessionsForDate.length - 3} more
+                      {sessionsForDate.length > 2 && (
+                        <div className="text-xs text-gray-500 px-1">
+                          +{sessionsForDate.length - 2} more
                         </div>
                       )}
                     </div>
@@ -441,7 +406,7 @@ function AdminDashboard() {
           </div>
         </section>
 
-        {/* Section 4: Planning for Next Week */}
+        {/* Section 3: Planning for Next Week */}
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Planning for Next Week ({nextWeekSessions.length} sessions

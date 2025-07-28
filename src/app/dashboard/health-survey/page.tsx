@@ -2,16 +2,21 @@
 
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 export default function HealthSurvey() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [viewingUserName, setViewingUserName] = useState<string>("");
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [medicalCertificateUrl, setMedicalCertificateUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     familyCardiacDeath: "",
     chestPainPalpitations: "",
@@ -45,10 +50,34 @@ export default function HealthSurvey() {
           return;
         }
 
+        // Check if we're viewing another user's health survey
+        const userIdParam = searchParams.get("userId");
+        const targetUserId = userIdParam || user.id;
+        const isViewingOtherUser = userIdParam && userIdParam !== user.id;
+        
+        setViewingUserId(targetUserId);
+        setIsReadOnly(isViewingOtherUser);
+
+        // If viewing another user, get their profile info for display
+        if (isViewingOtherUser) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, email")
+            .eq("id", targetUserId)
+            .single();
+          
+          if (profile) {
+            const userName = profile.first_name && profile.last_name 
+              ? `${profile.first_name} ${profile.last_name}`
+              : profile.first_name || profile.email?.split("@")[0] || "User";
+            setViewingUserName(userName);
+          }
+        }
+
         const { data: survey, error: surveyError } = await supabase
           .from("health_surveys")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("user_id", targetUserId)
           .single();
 
         if (surveyError && surveyError.code !== "PGRST116") {
@@ -59,6 +88,11 @@ export default function HealthSurvey() {
           // Check if survey is completed
           if (survey.completed_at) {
             setSurveyCompleted(true);
+          }
+          
+          // Store medical certificate URL if available
+          if (survey.medical_certificate_url) {
+            setMedicalCertificateUrl(survey.medical_certificate_url);
           }
 
           // Convert boolean values back to "yes"/"no" strings for the form
@@ -129,7 +163,7 @@ export default function HealthSurvey() {
     }
 
     loadSurveyData();
-  }, [router, supabase]);
+  }, [router, supabase, searchParams]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -153,13 +187,13 @@ export default function HealthSurvey() {
 
   // Check if submit button should be disabled - always require file upload
   const isSubmitDisabled =
-    !allQuestionsAnswered || !medicalCertificate || saving || surveyCompleted;
+    !allQuestionsAnswered || !medicalCertificate || saving || surveyCompleted || isReadOnly;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Prevent submission if survey is already completed
-    if (surveyCompleted) {
+    // Prevent form submission when viewing another user's survey or if completed
+    if (isReadOnly || surveyCompleted) {
       return;
     }
 
@@ -389,14 +423,31 @@ export default function HealthSurvey() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto">
+        {/* Back button for admin viewing other users' surveys */}
+        {isReadOnly && (
+          <div className="mb-4">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Runners
+            </button>
+          </div>
+        )}
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Health Survey
+            {isReadOnly ? `${viewingUserName}'s Health Survey` : "Health Survey"}
           </h1>
           <p className="text-lg text-gray-600">In the last 12 months</p>
           <p className="text-sm text-gray-500 mt-2">
-            Please answer all questions honestly to help us create a safe and
-            effective training program for you.
+            {isReadOnly 
+              ? "Health survey information for this user (read-only view)."
+              : "Please answer all questions honestly to help us create a safe and effective training program for you."
+            }
           </p>
         </div>
 
@@ -467,9 +518,9 @@ export default function HealthSurvey() {
                             formData[q.name as keyof typeof formData] === "yes"
                           }
                           onChange={handleInputChange}
-                          disabled={surveyCompleted}
+                          disabled={surveyCompleted || isReadOnly}
                           className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
-                            surveyCompleted
+                            (surveyCompleted || isReadOnly)
                               ? "cursor-not-allowed opacity-50"
                               : ""
                           }`}
@@ -477,7 +528,7 @@ export default function HealthSurvey() {
                         />
                         <span
                           className={`ml-2 text-sm ${
-                            surveyCompleted ? "text-gray-500" : "text-gray-700"
+                            (surveyCompleted || isReadOnly) ? "text-gray-500" : "text-gray-700"
                           }`}
                         >
                           Yes
@@ -492,9 +543,9 @@ export default function HealthSurvey() {
                             formData[q.name as keyof typeof formData] === "no"
                           }
                           onChange={handleInputChange}
-                          disabled={surveyCompleted}
+                          disabled={surveyCompleted || isReadOnly}
                           className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
-                            surveyCompleted
+                            (surveyCompleted || isReadOnly)
                               ? "cursor-not-allowed opacity-50"
                               : ""
                           }`}
@@ -502,7 +553,7 @@ export default function HealthSurvey() {
                         />
                         <span
                           className={`ml-2 text-sm ${
-                            surveyCompleted ? "text-gray-500" : "text-gray-700"
+                            (surveyCompleted || isReadOnly) ? "text-gray-500" : "text-gray-700"
                           }`}
                         >
                           No
@@ -534,9 +585,9 @@ export default function HealthSurvey() {
                   name="documentType"
                   value={formData.documentType}
                   onChange={handleInputChange}
-                  disabled={surveyCompleted}
+                  disabled={surveyCompleted || isReadOnly}
                   className={`block w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
-                    surveyCompleted ? "cursor-not-allowed opacity-50" : ""
+                    (surveyCompleted || isReadOnly) ? "cursor-not-allowed opacity-50" : ""
                   }`}
                   required
                 >
@@ -558,17 +609,53 @@ export default function HealthSurvey() {
                     id="medicalCertificate"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     onChange={handleFileChange}
-                    disabled={surveyCompleted}
+                    disabled={surveyCompleted || isReadOnly}
                     className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
-                      surveyCompleted ? "cursor-not-allowed opacity-50" : ""
+                      (surveyCompleted || isReadOnly) ? "cursor-not-allowed opacity-50" : ""
                     }`}
-                    required={!surveyCompleted}
+                    required={!surveyCompleted && !isReadOnly}
                   />
                 </div>
                 {medicalCertificate && (
                   <p className="mt-2 text-sm text-green-600">
                     File selected: {medicalCertificate.name}
                   </p>
+                )}
+                
+                {/* Medical Certificate View Button - Show when admin is viewing and certificate exists */}
+                {isReadOnly && medicalCertificateUrl && (
+                  <div className="mt-4">
+                    <a
+                      href={medicalCertificateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      View Medical Certificate
+                    </a>
+                  </div>
+                )}
+                
+                {/* Show message if no certificate available for admin */}
+                {isReadOnly && !medicalCertificateUrl && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-700">
+                      No medical certificate has been uploaded by this user yet.
+                    </p>
+                  </div>
                 )}
                 <p className="mt-2 text-xs text-amber-600">
                   Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG (Max 10MB)
@@ -607,9 +694,9 @@ export default function HealthSurvey() {
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons - Only show for own survey or read-only back button */}
           <div className="pt-6">
-            {isSubmitDisabled && !surveyCompleted && (
+            {!isReadOnly && isSubmitDisabled && !surveyCompleted && (
               <p className="text-sm text-amber-600 mb-4 text-right">
                 {!allQuestionsAnswered
                   ? "Please answer all questions to continue."
@@ -624,44 +711,46 @@ export default function HealthSurvey() {
                 onClick={handleCancel}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                {surveyCompleted ? "Back to Dashboard" : "Cancel"}
+                {isReadOnly ? "Back to Runners" : surveyCompleted ? "Back to Dashboard" : "Cancel"}
               </button>
-              {surveyCompleted ? (
-                <button
-                  type="button"
-                  disabled
-                  className="px-6 py-3 bg-green-100 text-green-700 rounded-lg cursor-not-allowed flex items-center space-x-2"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              {!isReadOnly && (
+                surveyCompleted ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="px-6 py-3 bg-green-100 text-green-700 rounded-lg cursor-not-allowed flex items-center space-x-2"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>Survey Completed</span>
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={isSubmitDisabled}
-                  className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
-                    isSubmitDisabled
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  {saving && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  )}
-                  <span>{saving ? "Submitting..." : "Submit Survey"}</span>
-                </button>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <span>Survey Completed</span>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitDisabled}
+                    className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
+                      isSubmitDisabled
+                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {saving && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{saving ? "Submitting..." : "Submit Survey"}</span>
+                  </button>
+                )
               )}
             </div>
           </div>

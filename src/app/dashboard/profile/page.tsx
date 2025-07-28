@@ -2,15 +2,19 @@
 
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 export default function Profile() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [viewingUserName, setViewingUserName] = useState<string>("");
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -102,10 +106,18 @@ export default function Profile() {
           return;
         }
 
+        // Check if we're viewing another user's profile
+        const userIdParam = searchParams.get("userId");
+        const targetUserId = userIdParam || user.id;
+        const isViewingOtherUser = userIdParam && userIdParam !== user.id;
+        
+        setViewingUserId(targetUserId);
+        setIsReadOnly(isViewingOtherUser);
+
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
+          .eq("id", targetUserId)
           .single();
 
         if (profileError && profileError.code !== "PGRST116") {
@@ -113,6 +125,12 @@ export default function Profile() {
         }
 
         if (profile) {
+          // Set viewing user name for display
+          const userName = profile.first_name && profile.last_name 
+            ? `${profile.first_name} ${profile.last_name}`
+            : profile.first_name || profile.email?.split("@")[0] || "User";
+          setViewingUserName(userName);
+          
           setFormData({
             firstName: profile.first_name || "",
             lastName: profile.last_name || "",
@@ -166,7 +184,7 @@ export default function Profile() {
     }
 
     loadProfile();
-  }, [router, supabase]);
+  }, [router, supabase, searchParams]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -194,6 +212,11 @@ export default function Profile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent form submission when viewing another user's profile
+    if (isReadOnly) {
+      return;
+    }
 
     // Form validation is handled by the disabled button state
     if (!isFormValid()) {
@@ -399,8 +422,23 @@ export default function Profile() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto">
+        {/* Back button for admin viewing other profiles */}
+        {isReadOnly && (
+          <div className="mb-4">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Runners
+            </button>
+          </div>
+        )}
+        
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Profile Settings
+          {isReadOnly ? `${viewingUserName}'s Profile` : "Profile Settings"}
         </h1>
 
         {error && (
@@ -431,7 +469,8 @@ export default function Profile() {
                   required
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -449,7 +488,8 @@ export default function Profile() {
                   required
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -467,7 +507,8 @@ export default function Profile() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -485,7 +526,8 @@ export default function Profile() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -503,7 +545,8 @@ export default function Profile() {
                   required
                   value={formData.dateOfBirth}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -530,7 +573,8 @@ export default function Profile() {
                   required
                   value={formData.street}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -549,7 +593,8 @@ export default function Profile() {
                     required
                     value={formData.city}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    readOnly={isReadOnly}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   />
                 </div>
 
@@ -567,7 +612,8 @@ export default function Profile() {
                     required
                     value={formData.state}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    readOnly={isReadOnly}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   />
                 </div>
 
@@ -585,7 +631,8 @@ export default function Profile() {
                     required
                     value={formData.zipCode}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    readOnly={isReadOnly}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   />
                 </div>
 
@@ -603,7 +650,8 @@ export default function Profile() {
                     required
                     value={formData.country}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    readOnly={isReadOnly}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   />
                 </div>
               </div>
@@ -631,7 +679,8 @@ export default function Profile() {
                   placeholder="Strava username or email"
                   value={formData.stravaAccount}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -649,7 +698,8 @@ export default function Profile() {
                   placeholder="Garmin username or email"
                   value={formData.garminAccount}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -672,8 +722,9 @@ export default function Profile() {
                     <input
                       type="checkbox"
                       checked={formData.trainingDays.includes(day)}
-                      onChange={() => handleCheckboxChange("trainingDays", day)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      onChange={() => !isReadOnly && handleCheckboxChange("trainingDays", day)}
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">{day}</span>
                   </label>
@@ -703,7 +754,8 @@ export default function Profile() {
                   required
                   value={formData.trainingHoursPerWeek}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Select hours per week</option>
                   <option value="1-2">1-2 hours</option>
@@ -729,7 +781,8 @@ export default function Profile() {
                   required
                   value={formData.runningLevel}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Select your running level</option>
                   {runningLevels.map((level) => (
@@ -754,7 +807,8 @@ export default function Profile() {
                   required
                   value={formData.currentWeeklyKm}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Select weekly kilometers</option>
                   <option value="0-5">0-5 km</option>
@@ -781,7 +835,8 @@ export default function Profile() {
                   required
                   value={formData.longestDistance}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 >
                   <option value="">Select longest distance</option>
                   <option value="Less than 5K">Less than 5K</option>
@@ -812,7 +867,8 @@ export default function Profile() {
                   placeholder="e.g., 25:30 (MM:SS)"
                   value={formData.recent5kTime}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -830,7 +886,8 @@ export default function Profile() {
                   placeholder="e.g., 55:00 (MM:SS)"
                   value={formData.recent10kTime}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                  readOnly={isReadOnly}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -853,9 +910,10 @@ export default function Profile() {
                       type="checkbox"
                       checked={formData.equipment.includes(equipment)}
                       onChange={() =>
-                        handleCheckboxChange("equipment", equipment)
+                        !isReadOnly && handleCheckboxChange("equipment", equipment)
                       }
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">
                       {equipment}
@@ -886,7 +944,8 @@ export default function Profile() {
                       value="yes"
                       checked={formData.hasInjury === "yes"}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">Yes</span>
                   </label>
@@ -897,7 +956,8 @@ export default function Profile() {
                       value="no"
                       checked={formData.hasInjury === "no"}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">No</span>
                   </label>
@@ -918,7 +978,8 @@ export default function Profile() {
                     rows={3}
                     value={formData.injuryDetails}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    readOnly={isReadOnly}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                     placeholder="Describe your current injuries, their severity, and any limitations they cause..."
                   ></textarea>
                 </div>
@@ -937,7 +998,8 @@ export default function Profile() {
                       value="yes"
                       checked={formData.hasPastInjury === "yes"}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">Yes</span>
                   </label>
@@ -948,7 +1010,8 @@ export default function Profile() {
                       value="no"
                       checked={formData.hasPastInjury === "no"}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">No</span>
                   </label>
@@ -969,7 +1032,8 @@ export default function Profile() {
                     rows={3}
                     value={formData.pastInjuryDetails}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    readOnly={isReadOnly}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                     placeholder="Describe your past injuries, when they occurred, and if they still affect you..."
                   ></textarea>
                 </div>
@@ -997,7 +1061,8 @@ export default function Profile() {
                       value="yes"
                       checked={formData.hasSmartwatch === "yes"}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">Yes</span>
                   </label>
@@ -1008,7 +1073,8 @@ export default function Profile() {
                       value="no"
                       checked={formData.hasSmartwatch === "no"}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      disabled={isReadOnly}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
                     />
                     <span className="ml-2 text-sm text-gray-700">No</span>
                   </label>
@@ -1028,7 +1094,8 @@ export default function Profile() {
                     name="smartwatchType"
                     value={formData.smartwatchType}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
+                    disabled={isReadOnly}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                   >
                     <option value="">Select your smartwatch</option>
                     {smartwatchTypes.map((type) => (
@@ -1042,36 +1109,38 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-6">
-            {!isFormValid() && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-700">
-                  Please fill in all required fields marked with * to save your
-                  profile.
-                </p>
+          {/* Action Buttons - Only show for own profile */}
+          {!isReadOnly && (
+            <div className="pt-6">
+              {!isFormValid() && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    Please fill in all required fields marked with * to save your
+                    profile.
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || !isFormValid()}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {saving && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>{saving ? "Saving..." : "Save Profile"}</span>
+                </button>
               </div>
-            )}
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving || !isFormValid()}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {saving && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                )}
-                <span>{saving ? "Saving..." : "Save Profile"}</span>
-              </button>
             </div>
-          </div>
+          )}
         </form>
       </div>
     </DashboardLayout>
