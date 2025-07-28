@@ -1,18 +1,18 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
-export default function Profile() {
+function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [, setViewingUserId] = useState<string | null>(null);
   const [viewingUserName, setViewingUserName] = useState<string>("");
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [formData, setFormData] = useState({
@@ -112,7 +112,7 @@ export default function Profile() {
         const isViewingOtherUser = userIdParam && userIdParam !== user.id;
         
         setViewingUserId(targetUserId);
-        setIsReadOnly(isViewingOtherUser);
+        setIsReadOnly(!!isViewingOtherUser);
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
@@ -1144,5 +1144,13 @@ export default function Profile() {
         </form>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function Profile() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProfileContent />
+    </Suspense>
   );
 }

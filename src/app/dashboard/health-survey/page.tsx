@@ -1,11 +1,11 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
-export default function HealthSurvey() {
+function HealthSurveyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -13,7 +13,7 @@ export default function HealthSurvey() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [, setViewingUserId] = useState<string | null>(null);
   const [viewingUserName, setViewingUserName] = useState<string>("");
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [medicalCertificateUrl, setMedicalCertificateUrl] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function HealthSurvey() {
         const isViewingOtherUser = userIdParam && userIdParam !== user.id;
         
         setViewingUserId(targetUserId);
-        setIsReadOnly(isViewingOtherUser);
+        setIsReadOnly(!!isViewingOtherUser);
 
         // If viewing another user, get their profile info for display
         if (isViewingOtherUser) {
@@ -757,5 +757,13 @@ export default function HealthSurvey() {
         </form>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function HealthSurvey() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HealthSurveyContent />
+    </Suspense>
   );
 }

@@ -57,7 +57,6 @@ function AdminDashboard() {
 
         // Get today's date and week range
         const today = new Date();
-        const todayString = today.toISOString().split("T")[0];
 
         // Get current week range (Monday to Sunday)
         const currentWeekStart = new Date(today);
