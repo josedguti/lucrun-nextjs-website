@@ -325,6 +325,12 @@ function CalendarContent() {
 
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, session: TrainingSession) => {
+    // Only allow admin users to drag sessions
+    if (currentUser?.email !== "luc.run.coach@gmail.com") {
+      e.preventDefault();
+      return;
+    }
+    
     setDraggedSession(session);
     e.dataTransfer.effectAllowed = "move";
   };
@@ -337,23 +343,32 @@ function CalendarContent() {
   const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
     if (draggedSession && currentUser) {
+      // Only allow admin users to drop sessions
+      const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
+      if (!isAdmin) {
+        setDraggedSession(null); // Clear the dragged session
+        return;
+      }
+
       const newDateString = targetDate.toISOString().split("T")[0];
 
       try {
         setSaving(true);
+        setError(null);
 
-        // Update in database
+        // Admin can move any session (no user_id filter needed)
         const { error } = await supabase
           .from("training_sessions")
           .update({ session_date: newDateString })
-          .eq("id", draggedSession.id)
-          .eq("user_id", currentUser.id);
+          .eq("id", draggedSession.id);
 
         if (error) {
           console.error("Error updating session date:", error);
-          setError("Failed to update session date");
+          setError(`Failed to update session date: ${error.message}`);
           return;
         }
+
+        console.log("Session date updated successfully:", draggedSession.id, "to", newDateString);
 
         // Update local state
         setTrainingSessions((prev) =>
@@ -512,8 +527,8 @@ function CalendarContent() {
       return;
     }
     
-    if (!newSession.title.trim()) {
-      console.log("No session title");
+    if (!newSession.type) {
+      console.log("No session type selected");
       return;
     }
 
@@ -539,6 +554,7 @@ function CalendarContent() {
       const sessionData = sessionToDbFormat(
         {
           ...newSession,
+          title: newSession.type, // Use the session type as the title
           time: "08:00", // Default time
           duration: "30 min", // Default duration
         },
@@ -548,7 +564,14 @@ function CalendarContent() {
       const { data, error } = await supabase
         .from("training_sessions")
         .insert(sessionData)
-        .select()
+        .select(`
+          *,
+          profiles!training_sessions_user_id_fkey (
+            first_name,
+            last_name,
+            email
+          )
+        `)
         .single();
 
       if (error) {
@@ -559,9 +582,19 @@ function CalendarContent() {
       }
 
       // Convert back to local format and add to state
+      let sessionTitle = data.title;
+      
+      // For admin view, include user name in title
+      if (isAdmin && data.profiles) {
+        const userName = data.profiles.first_name && data.profiles.last_name
+          ? `${data.profiles.first_name} ${data.profiles.last_name}`
+          : data.profiles.email?.split('@')[0] || 'Unknown User';
+        sessionTitle = `${userName}: ${data.title}`;
+      }
+
       const newLocalSession: TrainingSession = {
         id: data.id,
-        title: data.title,
+        title: sessionTitle,
         type: data.session_type,
         date: data.session_date,
         time: data.session_time || undefined,
@@ -573,10 +606,12 @@ function CalendarContent() {
         hasConstraints: data.has_constraints || false,
         rpe: data.rpe?.toString() || undefined,
         comments: data.comments || undefined,
+        user_id: data.user_id, // Include user_id for admin operations
       };
 
       setTrainingSessions((prev) => [...prev, newLocalSession]);
       closeCreateModal();
+      console.log("Session created successfully:", newLocalSession);
     } catch (err) {
       console.error("Error creating session:", err);
       setError("Failed to create session");
@@ -691,17 +726,29 @@ function CalendarContent() {
       setSaving(true);
       setError(null);
 
-      const { error } = await supabase
+      // Check if user is admin
+      const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
+      
+      // Admin can delete any session, regular users can only delete their own
+      let deleteQuery = supabase
         .from("training_sessions")
         .delete()
-        .eq("id", selectedSession.id)
-        .eq("user_id", currentUser.id);
+        .eq("id", selectedSession.id);
+
+      // Only add user_id filter for non-admin users
+      if (!isAdmin) {
+        deleteQuery = deleteQuery.eq("user_id", currentUser.id);
+      }
+
+      const { error } = await deleteQuery;
 
       if (error) {
         console.error("Error deleting session:", error);
-        setError("Failed to delete session");
+        setError(`Failed to delete session: ${error.message}`);
         return;
       }
+
+      console.log("Session deleted successfully:", selectedSession.id);
 
       // Update local state
       setTrainingSessions((prev) =>
@@ -717,6 +764,121 @@ function CalendarContent() {
     }
   };
 
+  // Copy session handlers
+  const openCopySession = () => {
+    if (selectedSession) {
+      setCopySession({
+        targetRunnerId: "",
+        targetDate: new Date().toISOString().split("T")[0], // Default to today
+      });
+      setShowCopySession(true);
+    }
+  };
+
+  const closeCopySession = () => {
+    setShowCopySession(false);
+    setCopySession({
+      targetRunnerId: "",
+      targetDate: "",
+    });
+  };
+
+  const handleCopySession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedSession || !currentUser || !copySession.targetRunnerId || !copySession.targetDate) {
+      setError("Please fill in all required fields for copying the session");
+      return;
+    }
+
+    const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
+    if (!isAdmin) {
+      setError("Only admin users can copy sessions");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      // Create session data based on the original session but for the new runner and date
+      const sessionData = sessionToDbFormat(
+        {
+          title: selectedSession.type, // Use the original session type as title
+          type: selectedSession.type,
+          date: copySession.targetDate,
+          time: selectedSession.time || "08:00",
+          duration: selectedSession.duration || "30 min",
+          description: selectedSession.description || "",
+          isCompleted: false, // New session should start as not completed
+          hasConstraints: false, // Reset constraints for new session
+          rpe: "", // Reset RPE for new session
+          comments: "", // Reset comments for new session
+        },
+        copySession.targetRunnerId
+      );
+
+      const { data, error } = await supabase
+        .from("training_sessions")
+        .insert(sessionData)
+        .select(`
+          *,
+          profiles!training_sessions_user_id_fkey (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error copying session:", error);
+        setError(`Failed to copy session: ${error.message}`);
+        return;
+      }
+
+      // Format the new session for display (with runner name for admin view)
+      let sessionTitle = data.title;
+      if (isAdmin && data.profiles) {
+        const userName = data.profiles.first_name && data.profiles.last_name
+          ? `${data.profiles.first_name} ${data.profiles.last_name}`
+          : data.profiles.email?.split('@')[0] || 'Unknown User';
+        sessionTitle = `${userName}: ${data.title}`;
+      }
+
+      const newLocalSession: TrainingSession = {
+        id: data.id,
+        title: sessionTitle,
+        type: data.session_type,
+        date: data.session_date,
+        time: data.session_time || undefined,
+        duration: data.duration_minutes
+          ? `${data.duration_minutes} min`
+          : undefined,
+        description: data.description || undefined,
+        isCompleted: data.is_completed || false,
+        hasConstraints: data.has_constraints || false,
+        rpe: data.rpe?.toString() || undefined,
+        comments: data.comments || undefined,
+        user_id: data.user_id,
+      };
+
+      // Add the new session to local state
+      setTrainingSessions((prev) => [...prev, newLocalSession]);
+      
+      // Close both the copy modal and the main session modal
+      closeCopySession();
+      closeSessionModal();
+      
+      console.log("Session copied successfully:", newLocalSession);
+    } catch (err) {
+      console.error("Error copying session:", err);
+      setError("Failed to copy session");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const [showEmojiPickerDescription, setShowEmojiPickerDescription] =
     useState(false);
   const [showEmojiPickerComments, setShowEmojiPickerComments] = useState(false);
@@ -727,6 +889,13 @@ function CalendarContent() {
 
   // Filter state for admin
   const [selectedRunnerFilter, setSelectedRunnerFilter] = useState<string>("all");
+
+  // Copy session state
+  const [showCopySession, setShowCopySession] = useState(false);
+  const [copySession, setCopySession] = useState({
+    targetRunnerId: "",
+    targetDate: "",
+  });
 
   // Handle emoji selection for new session
   const handleEmojiClickDescription = (emojiData: { emoji: string }) => {
@@ -1031,12 +1200,12 @@ function CalendarContent() {
                         )}
                       </div>
 
-                      {/* Training Sessions */}
-                      <div className="space-y-1">
-                        {sessions.slice(0, 2).map((session) => (
+                      {/* Training Sessions - Scrollable */}
+                      <div className="space-y-1 overflow-y-auto max-h-16 scrollbar-hide">
+                        {sessions.map((session) => (
                           <div
                             key={session.id}
-                            draggable
+                            draggable={currentUser?.email === "luc.run.coach@gmail.com"}
                             onDragStart={(e) => handleDragStart(e, session)}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1052,11 +1221,6 @@ function CalendarContent() {
                             {session.title}
                           </div>
                         ))}
-                        {sessions.length > 2 && (
-                          <div className="text-xs text-gray-500 px-1">
-                            +{sessions.length - 2} more
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
@@ -1132,12 +1296,12 @@ function CalendarContent() {
                         )}
                       </div>
 
-                      {/* Training Sessions */}
-                      <div className="space-y-1">
-                        {sessions.slice(0, 3).map((session) => (
+                      {/* Training Sessions - Scrollable */}
+                      <div className="space-y-1 overflow-y-auto max-h-20 scrollbar-hide">
+                        {sessions.map((session) => (
                           <div
                             key={session.id}
-                            draggable
+                            draggable={currentUser?.email === "luc.run.coach@gmail.com"}
                             onDragStart={(e) => handleDragStart(e, session)}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1153,11 +1317,6 @@ function CalendarContent() {
                             {session.title}
                           </div>
                         ))}
-                        {sessions.length > 3 && (
-                          <div className="text-xs text-gray-500 px-2">
-                            +{sessions.length - 3} more
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
@@ -1805,19 +1964,34 @@ function CalendarContent() {
 
                 {/* Action Buttons */}
                 <div className="flex justify-between">
-                  {currentUser?.email === "luc.run.coach@gmail.com" && (
-                    <button
-                      type="button"
-                      onClick={handleDeleteSession}
-                      disabled={saving}
-                      className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                    >
-                      {saving && (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                      )}
-                      <span>{saving ? "Deleting..." : "Supprimer"}</span>
-                    </button>
-                  )}
+                  <div className="flex gap-3">
+                    {currentUser?.email === "luc.run.coach@gmail.com" && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteSession}
+                        disabled={saving}
+                        className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        {saving && (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                        )}
+                        <span>{saving ? "Deleting..." : "Supprimer"}</span>
+                      </button>
+                    )}
+                    {currentUser?.email === "luc.run.coach@gmail.com" && (
+                      <button
+                        type="button"
+                        onClick={openCopySession}
+                        disabled={saving}
+                        className="px-4 py-2 text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span>Copy Session</span>
+                      </button>
+                    )}
+                  </div>
                   <div className={`flex gap-3 ${currentUser?.email !== "luc.run.coach@gmail.com" ? "ml-auto" : ""}`}>
                     <button
                       type="button"
@@ -1838,6 +2012,126 @@ function CalendarContent() {
                       <span>{saving ? "Updating..." : "Modifier"}</span>
                     </button>
                   </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Copy Session Modal */}
+        {showCopySession && selectedSession && (
+          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Copy Session
+                </h2>
+                <button
+                  onClick={closeCopySession}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleCopySession} className="p-6">
+                {/* Original Session Info */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">
+                    Copying Session:
+                  </h3>
+                  <div className={`inline-block px-2 py-1 rounded text-xs ${getSessionColor(selectedSession.type)}`}>
+                    {selectedSession.type}
+                  </div>
+                  {selectedSession.description && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {selectedSession.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Target Runner Selection */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign to Runner *
+                  </label>
+                  <select
+                    value={copySession.targetRunnerId}
+                    onChange={(e) =>
+                      setCopySession({
+                        ...copySession,
+                        targetRunnerId: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    required
+                  >
+                    <option value="">Select a runner...</option>
+                    {runners.length === 0 ? (
+                      <option value="" disabled>No runners found</option>
+                    ) : (
+                      runners.map((runner) => (
+                        <option key={runner.id} value={runner.id}>
+                          {runner.first_name && runner.last_name
+                            ? `${runner.first_name} ${runner.last_name}`
+                            : runner.first_name || runner.email?.split('@')[0] || 'Unknown User'}
+                          {runner.email && ` (${runner.email})`}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                {/* Target Date */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Session Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={copySession.targetDate}
+                    onChange={(e) =>
+                      setCopySession({
+                        ...copySession,
+                        targetDate: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    required
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeCopySession}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving || !copySession.targetRunnerId || !copySession.targetDate}
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {saving && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{saving ? "Copying..." : "Copy Session"}</span>
+                  </button>
                 </div>
               </form>
             </div>

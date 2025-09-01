@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LucRun is a Next.js 15 web application for a professional running coach platform. It features a marketing website with client dashboard functionality, built with React 19, TypeScript, and Tailwind CSS.
+LucRun is a Next.js 15 web application for a professional running coach platform. It combines a marketing website with a comprehensive client dashboard system, featuring real-time authentication, admin/user role separation, and a complete training management system.
 
 ## Development Commands
 
@@ -26,85 +26,107 @@ npm run lint
 
 ### Tech Stack
 - **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
+- **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS v4
-- **Database**: Supabase (configured but not fully implemented)
-- **Authentication**: Supabase Auth (setup in progress)
+- **Database**: Supabase with comprehensive schema
+- **Authentication**: Supabase Auth with role-based access
+- **State Management**: React Context (AuthContext) + local state
+
+### Database Schema
+
+The application uses a comprehensive Supabase schema with:
+- **User Management**: Profiles table extending auth.users with detailed runner information
+- **Training Programs**: 6 program types (beginner, 5k-10k, semi-marathon, marathon, trail-running, ultra-trail)
+- **Health System**: Health surveys with medical certificate uploads
+- **Training Sessions**: Scheduled sessions with RPE tracking and completion status
+- **Video Library**: Categorized training videos with progress tracking
+- **Dashboard Progress**: Onboarding checklist with automatic progress calculation
+- **Row Level Security**: Comprehensive RLS policies for data protection
+- **Admin Access**: Special admin email (luc.run.coach@gmail.com) with elevated permissions
+
+### Authentication Architecture
+
+- **AuthContext**: Global auth state management with admin detection
+- **Middleware**: Route protection for `/dashboard/*` paths, auth redirect handling
+- **ProtectedRoute**: Component wrapper for dashboard pages
+- **Role-Based UI**: Different navigation and functionality for admin vs regular users
 
 ### Project Structure
 
 ```
 src/
 ├── app/                    # Next.js App Router pages
-│   ├── (auth)/            # Authentication pages
-│   │   ├── login/
-│   │   └── signup/
-│   ├── dashboard/         # Protected dashboard area
-│   │   ├── calendar/
-│   │   ├── health-survey/
-│   │   ├── profile/
-│   │   ├── programs/
-│   │   └── videos/
-│   ├── about/
-│   ├── contact/
-│   ├── pricing/
-│   ├── programs/
-│   └── layout.tsx         # Root layout with Navbar
-├── components/            # Reusable components
-│   ├── Navbar.tsx         # Main navigation
-│   └── DashboardLayout.tsx # Dashboard sidebar layout
+│   ├── dashboard/         # Protected dashboard area (role-based)
+│   │   ├── runners/       # Admin only - user management
+│   │   ├── calendar/      # Training session calendar
+│   │   ├── health-survey/ # Health questionnaire
+│   │   ├── profile/       # User profile management
+│   │   ├── programs/      # Training program selection
+│   │   └── videos/        # Video library access
+│   ├── login/page.tsx     # Authentication pages
+│   ├── signup/page.tsx
+│   └── layout.tsx         # Root layout with global providers
+├── components/
+│   ├── Navbar.tsx         # Main navigation with auth integration
+│   ├── DashboardLayout.tsx # Sidebar layout with role-based navigation
+│   └── ProtectedRoute.tsx # Auth guard wrapper
+├── contexts/
+│   └── AuthContext.tsx    # Global auth state and admin detection
 └── utils/
+    ├── auth.ts            # Auth helper functions
     └── supabase/          # Supabase client configuration
         ├── client.ts      # Browser client
-        ├── server.ts      # Server client
+        ├── server.ts      # Server-side client
         └── middleware.ts  # Middleware client
 ```
 
 ### Key Features
 
-1. **Marketing Website**: Landing page with hero section, feature cards, and CTA
-2. **Dashboard System**: Multi-step onboarding checklist with progress tracking
-3. **Responsive Design**: Mobile-first approach with Tailwind CSS
-4. **Authentication Ready**: Supabase integration prepared for auth implementation
+1. **Marketing Website**: Hero sections, program showcase, contact forms
+2. **Dashboard System**: Role-based with admin/user interfaces
+3. **Progress Tracking**: Automated dashboard progress calculation via database triggers
+4. **Training Management**: Program enrollment, session scheduling, completion tracking
+5. **Health Integration**: Medical certificates, health surveys with RLS protection
+6. **Video System**: Categorized content with watch progress tracking
 
-### Dashboard Architecture
+### Authentication Flow
 
-The dashboard uses a checklist-based onboarding system:
-- Progress tracking with localStorage persistence
-- Step-by-step completion flow
-- Locked/unlocked states for sequential progression
-- Success messages and visual feedback
+- **Middleware**: Protects `/dashboard/*` routes, redirects unauthenticated users
+- **AuthProvider**: Wraps entire app, provides user state and admin detection
+- **Admin Detection**: Email-based (`luc.run.coach@gmail.com`)
+- **ProtectedRoute**: Dashboard wrapper ensuring authentication
+- **Role-Based Navigation**: Different sidebar menus for admin vs users
 
-### Styling Conventions
+### Database Integration Patterns
 
-- Uses Tailwind CSS utility classes
-- Geist font family (Sans and Mono variants)
-- Blue/gray color scheme (blue-600 primary, gray-900 text)
-- Responsive design with `sm:`, `md:`, `lg:` breakpoints
-- Hover states and transitions throughout
+- **Automatic Profile Creation**: Database trigger creates profile on user registration
+- **Progress Tracking**: Database functions calculate completion percentages
+- **RLS Security**: Users can only access their own data, admin can view all
+- **Optimistic Updates**: Client-side state updates with database sync
+- **Error Handling**: Comprehensive error boundaries with fallback states
 
-### State Management
+### Styling System
 
-- React hooks for local state
-- localStorage for dashboard progress persistence
-- URL search params for success messages
-- No external state management library currently
+- **Tailwind CSS v4**: Latest version with PostCSS integration
+- **Design System**: Blue primary (#2563eb), gray neutrals
+- **Typography**: Geist font family (Sans/Mono)
+- **Responsive**: Mobile-first with sidebar collapse on mobile
+- **Icons**: Inline SVG components throughout
 
-### Component Patterns
+### Configuration
 
-- Client components use "use client" directive
-- Link components from Next.js for navigation
-- Conditional rendering based on state
-- Icon components using SVG elements
-- Responsive navigation with mobile hamburger menu
+- **TypeScript**: Strict mode with path aliases (`@/*` → `./src/*`)
+- **ESLint**: Next.js and TypeScript presets
+- **Next.js**: Image optimization for Unsplash, Turbopack for dev
+- **Environment**: Supabase URL and anon key required
 
-## Development Notes
+## Development Patterns
 
-- Uses TypeScript strict mode
-- Path aliases configured: `@/*` maps to `./src/*`
-- ESLint configured with Next.js and TypeScript presets
-- No test framework currently configured
-- Tailwind CSS v4 with PostCSS integration
+- **Client Components**: Marked with "use client" for interactivity
+- **Server Actions**: Database operations through Supabase clients
+- **Error Boundaries**: Comprehensive error handling with user feedback
+- **Loading States**: Skeleton loaders and loading indicators throughout
+- **Optimistic Updates**: Immediate UI updates with background sync
 
 ## Environment Variables
 

@@ -379,9 +379,9 @@ function AdminDashboard() {
                         {date.getDate()}
                       </div>
                     </div>
-                    {/* Training Sessions */}
-                    <div className="space-y-1">
-                      {sessionsForDate.slice(0, 2).map((session) => (
+                    {/* Training Sessions - Scrollable */}
+                    <div className="space-y-1 overflow-y-auto max-h-20 scrollbar-hide">
+                      {sessionsForDate.map((session) => (
                         <div
                           key={session.id}
                           className={`text-xs px-1 py-0.5 rounded border truncate ${getSessionColor(
@@ -392,11 +392,6 @@ function AdminDashboard() {
                           {session.user_name.split(" ")[0]}
                         </div>
                       ))}
-                      {sessionsForDate.length > 2 && (
-                        <div className="text-xs text-gray-500 px-1">
-                          +{sessionsForDate.length - 2} more
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
