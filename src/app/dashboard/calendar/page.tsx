@@ -69,6 +69,7 @@ function CalendarContent() {
     selectedRunnerId: "",
   });
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [selectedSession, setSelectedSession] =
     useState<TrainingSession | null>(null);
   const [editSession, setEditSession] = useState({
@@ -761,7 +762,11 @@ function CalendarContent() {
     }
   };
 
-  const handleDeleteSession = async () => {
+  const handleDeleteSession = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const confirmDeleteSession = async () => {
     if (!selectedSession || !currentUser) return;
 
     try {
@@ -797,6 +802,7 @@ function CalendarContent() {
         prev.filter((session) => session.id !== selectedSession.id)
       );
 
+      setShowDeleteConfirmation(false);
       closeSessionModal();
     } catch (err) {
       console.error("Error deleting session:", err);
@@ -804,6 +810,10 @@ function CalendarContent() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const cancelDeleteSession = () => {
+    setShowDeleteConfirmation(false);
   };
 
   // Copy session handlers
@@ -2173,6 +2183,67 @@ function CalendarContent() {
                   </div>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmation && selectedSession && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                  <svg
+                    className="w-6 h-6 text-red-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Supprimer la séance
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Êtes-vous sûr de vouloir supprimer cette séance
+                    d'entraînement?
+                    <br />
+                    <span className="text-sm text-gray-500">
+                      Cette action ne peut pas être annulée.
+                    </span>
+                  </p>
+                </div>
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={cancelDeleteSession}
+                    disabled={saving}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDeleteSession}
+                    disabled={saving}
+                    className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {saving && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{saving ? "Suppression..." : "Supprimer"}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

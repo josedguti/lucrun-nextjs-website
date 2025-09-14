@@ -38,6 +38,11 @@ interface TrainingSession {
   is_completed: boolean;
   user_name: string;
   program_name: string;
+  description?: string;
+  has_constraints?: boolean;
+  rpe?: number;
+  comments?: string;
+  duration_minutes?: number;
 }
 
 function AdminDashboard() {
@@ -47,6 +52,22 @@ function AdminDashboard() {
     []
   );
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [selectedSession, setSelectedSession] =
+    useState<TrainingSession | null>(null);
+  const [editSession, setEditSession] = useState({
+    title: "",
+    date: "",
+    description: "",
+    isCompleted: false,
+    hasConstraints: false,
+    rpe: "",
+    comments: "",
+    type: "personnalise" as string,
+  });
   const supabase = createClient();
 
   useEffect(() => {
@@ -153,6 +174,7 @@ function AdminDashboard() {
           .select(
             `
             id, title, user_id, session_date, session_time, session_type, is_completed,
+            description, has_constraints, rpe, comments, duration_minutes,
             profiles(first_name, last_name, email)
           `
           )
@@ -169,6 +191,7 @@ function AdminDashboard() {
             .select(
               `
             id, title, user_id, session_date, session_time, session_type, is_completed,
+            description, has_constraints, rpe, comments, duration_minutes,
             profiles(first_name, last_name, email)
           `
             )
@@ -190,6 +213,11 @@ function AdminDashboard() {
             session_time: session.session_time as string,
             session_type: session.session_type as string,
             is_completed: session.is_completed as boolean,
+            description: session.description as string,
+            has_constraints: session.has_constraints as boolean,
+            rpe: session.rpe as number,
+            comments: session.comments as string,
+            duration_minutes: session.duration_minutes as number,
             user_name: (() => {
               // Handle both array and object cases for profiles
               const profile = Array.isArray(session.profiles)
@@ -230,10 +258,33 @@ function AdminDashboard() {
     return dates;
   };
 
+  // Helper function to get next week dates
+  const getNextWeekDates = () => {
+    const today = new Date();
+    const nextWeekStart = new Date(today);
+    nextWeekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7) + 7);
+
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(nextWeekStart);
+      date.setDate(nextWeekStart.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
   // Helper function to get sessions for a specific date
   const getSessionsForDate = (date: Date) => {
     const dateString = date.toISOString().split("T")[0];
     return weekSessions.filter(
+      (session) => session.session_date === dateString
+    );
+  };
+
+  // Helper function to get next week sessions for a specific date
+  const getNextWeekSessionsForDate = (date: Date) => {
+    const dateString = date.toISOString().split("T")[0];
+    return nextWeekSessions.filter(
       (session) => session.session_date === dateString
     );
   };
@@ -256,6 +307,125 @@ function AdminDashboard() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
+  };
+
+  // Session modal handlers
+  const openSessionModal = (session: TrainingSession) => {
+    console.log("Opening session modal for:", session);
+    setSelectedSession(session);
+    setEditSession({
+      title: session.title,
+      date: session.session_date,
+      description: session.description || "",
+      isCompleted: session.is_completed || false,
+      hasConstraints: session.has_constraints || false,
+      rpe: session.rpe?.toString() || "",
+      comments: session.comments || "",
+      type: session.session_type as any, // Fix type casting issue
+    });
+    setShowSessionModal(true);
+  };
+
+  const closeSessionModal = () => {
+    setShowSessionModal(false);
+    setSelectedSession(null);
+  };
+
+  const handleUpdateSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editSession.title.trim() || !selectedSession) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      // Admin can only edit session details, not user feedback
+      const sessionData = {
+        title: editSession.title,
+        session_type: editSession.type,
+        session_date: editSession.date,
+        description: editSession.description || null,
+        // Don't update user-only fields (is_completed, has_constraints, rpe, comments)
+      };
+
+      const { error } = await supabase
+        .from("training_sessions")
+        .update(sessionData)
+        .eq("id", selectedSession.id);
+
+      if (error) {
+        console.error("Error updating session:", error);
+        setError(`Failed to update session: ${error.message}`);
+        return;
+      }
+
+      // Update local state - only admin-editable fields
+      setWeekSessions((prev) =>
+        prev.map((session) =>
+          session.id === selectedSession.id
+            ? {
+                ...session,
+                title: editSession.title,
+                session_type: editSession.type,
+                session_date: editSession.date,
+                description: editSession.description,
+                // Keep existing user feedback fields unchanged
+              }
+            : session
+        )
+      );
+
+      closeSessionModal();
+    } catch (err) {
+      console.error("Error updating session:", err);
+      setError("Failed to update session");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteSession = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const confirmDeleteSession = async () => {
+    if (!selectedSession) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const { error } = await supabase
+        .from("training_sessions")
+        .delete()
+        .eq("id", selectedSession.id);
+
+      if (error) {
+        console.error("Error deleting session:", error);
+        setError(`Failed to delete session: ${error.message}`);
+        return;
+      }
+
+      // Update local state
+      setWeekSessions((prev) =>
+        prev.filter((session) => session.id !== selectedSession.id)
+      );
+      setNextWeekSessions((prev) =>
+        prev.filter((session) => session.id !== selectedSession.id)
+      );
+
+      setShowDeleteConfirmation(false);
+      closeSessionModal();
+    } catch (err) {
+      console.error("Error deleting session:", err);
+      setError("Failed to delete session");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancelDeleteSession = () => {
+    setShowDeleteConfirmation(false);
   };
 
   if (loading) {
@@ -378,7 +548,7 @@ function AdminDashboard() {
                 return (
                   <div
                     key={index}
-                    className={`h-32 border rounded-lg p-2 transition-colors relative ${
+                    className={`h-56 border rounded-lg p-2 transition-colors relative ${
                       isToday
                         ? "bg-blue-50 border-blue-300"
                         : "bg-white border-gray-200 hover:bg-gray-50"
@@ -394,18 +564,23 @@ function AdminDashboard() {
                       </div>
                     </div>
                     {/* Training Sessions - Scrollable */}
-                    <div className="space-y-1 overflow-y-auto max-h-20 scrollbar-hide">
+                    <div className="space-y-1 overflow-y-auto max-h-44 scrollbar-hide">
                       {sessionsForDate.map((session) => (
                         <div
                           key={session.id}
-                          className={`text-xs px-1 py-0.5 rounded border truncate ${getSessionColor(
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("Session clicked:", session);
+                            openSessionModal(session);
+                          }}
+                          className={`text-xs px-2 py-1 rounded border cursor-pointer hover:shadow-sm hover:scale-105 transition-all ${getSessionColor(
                             session.session_type || "fractionne"
                           )}`}
-                          title={`${session.user_name}: ${session.title} - ${
-                            session.session_time || ""
-                          }`}
+                          title={`${session.user_name} (Click to edit)`}
                         >
-                          {session.user_name.split(" ")[0]}
+                          <div className="font-medium truncate">
+                            {session.user_name.split(" ")[0]}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -418,68 +593,97 @@ function AdminDashboard() {
 
         {/* Section 3: Planning for Next Week */}
         <section>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Planning for Next Week ({nextWeekSessions.length} sessions
-            scheduled)
-          </h2>
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-4 border-b">
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium text-gray-900">Upcoming Sessions</h3>
-                <Link
-                  href="/dashboard/calendar"
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Planning for Next Week ({nextWeekSessions.length} sessions
+              scheduled)
+            </h2>
+            <Link
+              href="/dashboard/calendar"
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Create New Sessions →
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            {/* Week Header */}
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                <div
+                  key={day}
+                  className="text-center text-sm font-medium text-gray-600 py-2"
                 >
-                  Create New Sessions →
-                </Link>
-              </div>
+                  {day}
+                </div>
+              ))}
             </div>
-            {nextWeekSessions.length > 0 ? (
-              <div className="divide-y divide-gray-200">
-                {nextWeekSessions.slice(0, 5).map((session) => (
-                  <div key={session.id} className="p-4 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-gray-900">
-                          {session.user_name}
-                        </h4>
-                        <p className="text-sm text-gray-600">{session.title}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {new Date(session.session_date).toLocaleDateString(
-                            "en-US",
-                            {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                            }
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {session.session_time || "08:00"}
-                        </p>
+
+            {/* Calendar Grid for Next Week */}
+            <div className="grid grid-cols-7 gap-2">
+              {getNextWeekDates().map((date, index) => {
+                const sessionsForDate = getNextWeekSessionsForDate(date);
+                const today = new Date();
+                const isToday = date.toDateString() === today.toDateString();
+
+                return (
+                  <div
+                    key={index}
+                    className={`h-56 border rounded-lg p-2 transition-colors relative ${
+                      isToday
+                        ? "bg-blue-50 border-blue-300"
+                        : "bg-white border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    {/* Date Header */}
+                    <div className="flex justify-between items-center mb-2">
+                      <div
+                        className={`text-sm font-medium ${
+                          isToday ? "text-blue-600" : "text-gray-900"
+                        }`}
+                      >
+                        {date.getDate()}
                       </div>
                     </div>
+                    {/* Training Sessions - Scrollable */}
+                    <div className="space-y-1 overflow-y-auto max-h-44 scrollbar-hide">
+                      {sessionsForDate.map((session) => (
+                        <div
+                          key={session.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openSessionModal(session);
+                          }}
+                          className={`text-xs px-2 py-1 rounded border cursor-pointer hover:shadow-sm hover:scale-105 transition-all ${getSessionColor(
+                            session.session_type || "fractionne"
+                          )}`}
+                          title={`${session.user_name} (Click to edit)`}
+                        >
+                          <div className="font-medium truncate">
+                            {session.user_name.split(" ")[0]}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-                {nextWeekSessions.length > 5 && (
-                  <div className="p-4 text-center text-sm text-gray-500">
-                    And {nextWeekSessions.length - 5} more sessions...
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="p-6 text-center">
-                <p className="text-gray-500 mb-4">
-                  No sessions planned for next week yet
-                </p>
-                <Link
-                  href="/dashboard/calendar"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Error Message */}
+        {error && (
+          <div className="fixed top-4 right-4 z-50 max-w-md">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-red-700">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-400 hover:text-red-600 ml-4"
                 >
                   <svg
-                    className="w-4 h-4 mr-2"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -488,15 +692,355 @@ function AdminDashboard() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
-                  Create Sessions
-                </Link>
+                </button>
               </div>
-            )}
+            </div>
           </div>
-        </section>
+        )}
+
+        {/* Saving Message */}
+        {saving && (
+          <div className="fixed top-4 right-4 z-50 max-w-md">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+                <p className="text-blue-700">Saving changes...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Session Details/Edit Modal */}
+        {showSessionModal && selectedSession && (
+          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Edit Training Session
+                </h2>
+                <button
+                  onClick={closeSessionModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateSession} className="p-6">
+                {/* Title and Date Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Session Type
+                    </label>
+                    <select
+                      value={editSession.type}
+                      onChange={(e) => {
+                        const newTitle = selectedSession.title.includes(":")
+                          ? `${selectedSession.title.split(":")[0]}: ${
+                              e.target.value
+                            }`
+                          : e.target.value;
+                        setEditSession({
+                          ...editSession,
+                          type: e.target.value,
+                          title: newTitle,
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    >
+                      <option value="fractionne">Fractionné</option>
+                      <option value="rando-trail">Rando Trail</option>
+                      <option value="renfo">Renfo</option>
+                      <option value="velo">Vélo</option>
+                      <option value="combo">Combo</option>
+                      <option value="personnalise">Personnalisé</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editSession.date}
+                      onChange={(e) =>
+                        setEditSession({ ...editSession, date: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={editSession.description}
+                    onChange={(e) =>
+                      setEditSession({
+                        ...editSession,
+                        description: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  />
+                </div>
+
+                {/* Radio Button Groups Row - Read-only for Admin */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {/* Session Completed */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Session Completed?
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="editCompleted"
+                          checked={editSession.isCompleted}
+                          onChange={() =>
+                            setEditSession({
+                              ...editSession,
+                              isCompleted: true,
+                            })
+                          }
+                          disabled={true}
+                          className="mr-2 cursor-not-allowed opacity-50"
+                        />
+                        Yes
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="editCompleted"
+                          checked={!editSession.isCompleted}
+                          onChange={() =>
+                            setEditSession({
+                              ...editSession,
+                              isCompleted: false,
+                            })
+                          }
+                          disabled={true}
+                          className="mr-2 cursor-not-allowed opacity-50"
+                        />
+                        No
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Constraints */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Any Constraints?
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="editConstraints"
+                          checked={editSession.hasConstraints}
+                          onChange={() =>
+                            setEditSession({
+                              ...editSession,
+                              hasConstraints: true,
+                            })
+                          }
+                          disabled={true}
+                          className="mr-2 cursor-not-allowed opacity-50"
+                        />
+                        Yes
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="editConstraints"
+                          checked={!editSession.hasConstraints}
+                          onChange={() =>
+                            setEditSession({
+                              ...editSession,
+                              hasConstraints: false,
+                            })
+                          }
+                          disabled={true}
+                          className="mr-2 cursor-not-allowed opacity-50"
+                        />
+                        No
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RPE - Read-only for Admin */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    RPE (Rate of Perceived Exertion)
+                  </label>
+                  <select
+                    value={editSession.rpe}
+                    onChange={(e) =>
+                      setEditSession({ ...editSession, rpe: e.target.value })
+                    }
+                    disabled={true}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-gray-100 cursor-not-allowed opacity-50"
+                  >
+                    <option value="">Select</option>
+                    <option value="1">1 - Very Easy</option>
+                    <option value="2">2 - Easy</option>
+                    <option value="3">3 - Moderate</option>
+                    <option value="4">4 - Somewhat Hard</option>
+                    <option value="5">5 - Hard</option>
+                    <option value="6">6 - Very Hard</option>
+                    <option value="7">7 - Extremely Hard</option>
+                    <option value="8">8 - Intense</option>
+                    <option value="9">9 - Very Intense</option>
+                    <option value="10">10 - Maximum</option>
+                  </select>
+                </div>
+
+                {/* Comments - Read-only for Admin */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Comments
+                  </label>
+                  <textarea
+                    value={editSession.comments}
+                    onChange={(e) =>
+                      setEditSession({
+                        ...editSession,
+                        comments: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    disabled={true}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-gray-100 cursor-not-allowed opacity-50"
+                    placeholder="Runner feedback will appear here"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between">
+                  <button
+                    type="button"
+                    onClick={handleDeleteSession}
+                    disabled={saving}
+                    className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {saving && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                    )}
+                    <span>{saving ? "Deleting..." : "Delete"}</span>
+                  </button>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={closeSessionModal}
+                      disabled={saving}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {saving && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      )}
+                      <span>{saving ? "Updating..." : "Update"}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmation && selectedSession && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                  <svg
+                    className="w-6 h-6 text-red-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Delete Training Session
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Are you sure you want to delete this training session for{" "}
+                    <span className="font-medium">
+                      {selectedSession.user_name}
+                    </span>
+                    ?
+                    <br />
+                    <span className="text-sm text-gray-500">
+                      This action cannot be undone.
+                    </span>
+                  </p>
+                </div>
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={cancelDeleteSession}
+                    disabled={saving}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDeleteSession}
+                    disabled={saving}
+                    className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {saving && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{saving ? "Deleting..." : "Delete"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

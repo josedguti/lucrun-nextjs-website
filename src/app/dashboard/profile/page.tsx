@@ -36,6 +36,10 @@ function ProfileContent() {
     pastInjuryDetails: "",
     hasSmartwatch: "",
     smartwatchType: "",
+    // Health Information
+    height: "",
+    weight: "",
+    bodyFatPercentage: "",
     // Running Information
     trainingHoursPerWeek: "",
     runningLevel: "",
@@ -110,7 +114,7 @@ function ProfileContent() {
         const userIdParam = searchParams.get("userId");
         const targetUserId = userIdParam || user.id;
         const isViewingOtherUser = userIdParam && userIdParam !== user.id;
-        
+
         setViewingUserId(targetUserId);
         setIsReadOnly(!!isViewingOtherUser);
 
@@ -126,11 +130,12 @@ function ProfileContent() {
 
         if (profile) {
           // Set viewing user name for display
-          const userName = profile.first_name && profile.last_name 
-            ? `${profile.first_name} ${profile.last_name}`
-            : profile.first_name || profile.email?.split("@")[0] || "User";
+          const userName =
+            profile.first_name && profile.last_name
+              ? `${profile.first_name} ${profile.last_name}`
+              : profile.first_name || profile.email?.split("@")[0] || "User";
           setViewingUserName(userName);
-          
+
           setFormData({
             firstName: profile.first_name || "",
             lastName: profile.last_name || "",
@@ -167,6 +172,9 @@ function ProfileContent() {
                 ? "no"
                 : "",
             smartwatchType: profile.smartwatch_type || "",
+            height: profile.height || "",
+            weight: profile.weight || "",
+            bodyFatPercentage: profile.body_fat_percentage || "",
             trainingHoursPerWeek: profile.training_hours_per_week || "",
             runningLevel: profile.running_level || "",
             currentWeeklyKm: profile.current_weekly_km || "",
@@ -209,6 +217,26 @@ function ProfileContent() {
         : [...prev[field], value],
     }));
   };
+
+  // Calculate BMI from height and weight
+  const calculateBMI = (height: string, weight: string): string => {
+    const heightNum = parseFloat(height);
+    const weightNum = parseFloat(weight);
+
+    if (!heightNum || !weightNum || heightNum <= 0 || weightNum <= 0) {
+      return "";
+    }
+
+    // Convert height from cm to meters
+    const heightInMeters = heightNum / 100;
+    // Calculate BMI: weight(kg) / height(m)²
+    const bmi = weightNum / (heightInMeters * heightInMeters);
+
+    return bmi.toFixed(1);
+  };
+
+  // Get current BMI value
+  const currentBMI = calculateBMI(formData.height, formData.weight);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,6 +305,9 @@ function ProfileContent() {
         past_injury_details: formData.pastInjuryDetails.trim() || null,
         has_smartwatch: formData.hasSmartwatch === "yes",
         smartwatch_type: formData.smartwatchType.trim() || null,
+        height: formData.height.trim() || null,
+        weight: formData.weight.trim() || null,
+        body_fat_percentage: formData.bodyFatPercentage.trim() || null,
         training_hours_per_week: formData.trainingHoursPerWeek.trim(),
         running_level: formData.runningLevel.trim(),
         current_weekly_km: formData.currentWeeklyKm.trim(),
@@ -394,6 +425,9 @@ function ProfileContent() {
       pastInjuryDetails: "",
       hasSmartwatch: "",
       smartwatchType: "",
+      height: "",
+      weight: "",
+      bodyFatPercentage: "",
       // Running Information
       trainingHoursPerWeek: "",
       runningLevel: "",
@@ -429,14 +463,24 @@ function ProfileContent() {
               onClick={() => router.back()}
               className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               Back to Runners
             </button>
           </div>
         )}
-        
+
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           {isReadOnly ? `${viewingUserName}'s Profile` : "Profile Settings"}
         </h1>
@@ -470,7 +514,9 @@ function ProfileContent() {
                   value={formData.firstName}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -489,7 +535,9 @@ function ProfileContent() {
                   value={formData.lastName}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -508,7 +556,9 @@ function ProfileContent() {
                   value={formData.email}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -527,7 +577,9 @@ function ProfileContent() {
                   value={formData.phone}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -546,7 +598,9 @@ function ProfileContent() {
                   value={formData.dateOfBirth}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -574,7 +628,9 @@ function ProfileContent() {
                   value={formData.street}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -594,7 +650,9 @@ function ProfileContent() {
                     value={formData.city}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
                   />
                 </div>
 
@@ -613,7 +671,9 @@ function ProfileContent() {
                     value={formData.state}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
                   />
                 </div>
 
@@ -632,7 +692,9 @@ function ProfileContent() {
                     value={formData.zipCode}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
                   />
                 </div>
 
@@ -651,7 +713,9 @@ function ProfileContent() {
                     value={formData.country}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
                   />
                 </div>
               </div>
@@ -680,7 +744,9 @@ function ProfileContent() {
                   value={formData.stravaAccount}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -699,7 +765,9 @@ function ProfileContent() {
                   value={formData.garminAccount}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -722,9 +790,13 @@ function ProfileContent() {
                     <input
                       type="checkbox"
                       checked={formData.trainingDays.includes(day)}
-                      onChange={() => !isReadOnly && handleCheckboxChange("trainingDays", day)}
+                      onChange={() =>
+                        !isReadOnly && handleCheckboxChange("trainingDays", day)
+                      }
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">{day}</span>
                   </label>
@@ -755,7 +827,9 @@ function ProfileContent() {
                   value={formData.trainingHoursPerWeek}
                   onChange={handleInputChange}
                   disabled={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <option value="">Select hours per week</option>
                   <option value="1-2">1-2 hours</option>
@@ -782,7 +856,9 @@ function ProfileContent() {
                   value={formData.runningLevel}
                   onChange={handleInputChange}
                   disabled={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <option value="">Select your running level</option>
                   {runningLevels.map((level) => (
@@ -808,7 +884,9 @@ function ProfileContent() {
                   value={formData.currentWeeklyKm}
                   onChange={handleInputChange}
                   disabled={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <option value="">Select weekly kilometers</option>
                   <option value="0-5">0-5 km</option>
@@ -836,7 +914,9 @@ function ProfileContent() {
                   value={formData.longestDistance}
                   onChange={handleInputChange}
                   disabled={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <option value="">Select longest distance</option>
                   <option value="Less than 5K">Less than 5K</option>
@@ -868,7 +948,9 @@ function ProfileContent() {
                   value={formData.recent5kTime}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
 
@@ -887,7 +969,9 @@ function ProfileContent() {
                   value={formData.recent10kTime}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                    isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                  }`}
                 />
               </div>
             </div>
@@ -910,10 +994,13 @@ function ProfileContent() {
                       type="checkbox"
                       checked={formData.equipment.includes(equipment)}
                       onChange={() =>
-                        !isReadOnly && handleCheckboxChange("equipment", equipment)
+                        !isReadOnly &&
+                        handleCheckboxChange("equipment", equipment)
                       }
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">
                       {equipment}
@@ -945,7 +1032,9 @@ function ProfileContent() {
                       checked={formData.hasInjury === "yes"}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">Yes</span>
                   </label>
@@ -957,7 +1046,9 @@ function ProfileContent() {
                       checked={formData.hasInjury === "no"}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">No</span>
                   </label>
@@ -979,7 +1070,9 @@ function ProfileContent() {
                     value={formData.injuryDetails}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
                     placeholder="Describe your current injuries, their severity, and any limitations they cause..."
                   ></textarea>
                 </div>
@@ -999,7 +1092,9 @@ function ProfileContent() {
                       checked={formData.hasPastInjury === "yes"}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">Yes</span>
                   </label>
@@ -1011,7 +1106,9 @@ function ProfileContent() {
                       checked={formData.hasPastInjury === "no"}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">No</span>
                   </label>
@@ -1033,11 +1130,127 @@ function ProfileContent() {
                     value={formData.pastInjuryDetails}
                     onChange={handleInputChange}
                     readOnly={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
                     placeholder="Describe your past injuries, when they occurred, and if they still affect you..."
                   ></textarea>
                 </div>
               )}
+
+              {/* Height, Weight, and Body Composition Section */}
+              <div className="space-y-6">
+                {/* First row: Height, Weight, BMI */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label
+                      htmlFor="height"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Height (cm)
+                    </label>
+                    <input
+                      type="number"
+                      id="height"
+                      name="height"
+                      min="1"
+                      max="300"
+                      step="0.1"
+                      value={formData.height}
+                      onChange={handleInputChange}
+                      readOnly={isReadOnly}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                        isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                      }`}
+                      placeholder="e.g., 170"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="weight"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Weight (kg)
+                    </label>
+                    <input
+                      type="number"
+                      id="weight"
+                      name="weight"
+                      min="1"
+                      max="500"
+                      step="0.1"
+                      value={formData.weight}
+                      onChange={handleInputChange}
+                      readOnly={isReadOnly}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                        isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                      }`}
+                      placeholder="e.g., 70"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="bmi"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      BMI (calculated)
+                    </label>
+                    <input
+                      type="text"
+                      id="bmi"
+                      name="bmi"
+                      value={currentBMI}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 cursor-not-allowed"
+                      placeholder="Auto-calculated"
+                    />
+                    {currentBMI && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {parseFloat(currentBMI) < 18.5 && "Underweight"}
+                        {parseFloat(currentBMI) >= 18.5 &&
+                          parseFloat(currentBMI) < 25 &&
+                          "Normal weight"}
+                        {parseFloat(currentBMI) >= 25 &&
+                          parseFloat(currentBMI) < 30 &&
+                          "Overweight"}
+                        {parseFloat(currentBMI) >= 30 && "Obese"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Second row: Body Fat Percentage */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label
+                      htmlFor="bodyFatPercentage"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Body Fat Percentage (%)
+                    </label>
+                    <input
+                      type="number"
+                      id="bodyFatPercentage"
+                      name="bodyFatPercentage"
+                      min="1"
+                      max="50"
+                      step="0.1"
+                      value={formData.bodyFatPercentage}
+                      onChange={handleInputChange}
+                      readOnly={isReadOnly}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                        isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                      }`}
+                      placeholder="e.g., 15.5"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Estimated body fat percentage
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1062,7 +1275,9 @@ function ProfileContent() {
                       checked={formData.hasSmartwatch === "yes"}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">Yes</span>
                   </label>
@@ -1074,7 +1289,9 @@ function ProfileContent() {
                       checked={formData.hasSmartwatch === "no"}
                       onChange={handleInputChange}
                       disabled={isReadOnly}
-                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${isReadOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${
+                        isReadOnly ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                     />
                     <span className="ml-2 text-sm text-gray-700">No</span>
                   </label>
@@ -1095,7 +1312,9 @@ function ProfileContent() {
                     value={formData.smartwatchType}
                     onChange={handleInputChange}
                     disabled={isReadOnly}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${isReadOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     <option value="">Select your smartwatch</option>
                     {smartwatchTypes.map((type) => (
@@ -1115,8 +1334,8 @@ function ProfileContent() {
               {!isFormValid() && (
                 <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-700">
-                    Please fill in all required fields marked with * to save your
-                    profile.
+                    Please fill in all required fields marked with * to save
+                    your profile.
                   </p>
                 </div>
               )}
