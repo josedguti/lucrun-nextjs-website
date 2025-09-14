@@ -39,7 +39,7 @@ interface ProgramEnrollment {
   training_programs?: {
     title: string;
     program_type: string;
-  };
+  }[];
 }
 
 interface RunnerDetail {
@@ -154,7 +154,9 @@ export default function RunnersPage() {
 
   const getActiveProgram = (runner: RunnerDetail) => {
     const activeEnrollment = runner.programEnrollments.find((e) => e.is_active);
-    return activeEnrollment?.training_programs?.title || "Program Not Chosen";
+    return (
+      activeEnrollment?.training_programs?.[0]?.title || "Program Not Chosen"
+    );
   };
 
   const handleViewProfile = (runner: RunnerDetail) => {

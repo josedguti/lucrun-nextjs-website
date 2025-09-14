@@ -28,7 +28,6 @@ interface RunnerTile {
   sessionTime?: string;
 }
 
-
 interface TrainingSession {
   id: string;
   title: string;
@@ -115,10 +114,14 @@ function AdminDashboard() {
                 profile.email?.split("@")[0] ||
                 "Unknown User";
 
-          const programName = 
-            Array.isArray(enrollments?.[0]?.training_programs) 
-              ? (enrollments[0].training_programs as { title: string }[])[0]?.title || "No Program"
-              : (enrollments?.[0]?.training_programs as unknown as { title: string })?.title || "No Program";
+          const programName = Array.isArray(enrollments?.[0]?.training_programs)
+            ? (enrollments[0].training_programs as { title: string }[])[0]
+                ?.title || "No Program"
+            : (
+                enrollments?.[0]?.training_programs as unknown as {
+                  title: string;
+                }
+              )?.title || "No Program";
           const avatar = profile.first_name
             ? profile.first_name[0].toUpperCase()
             : profile.email?.[0].toUpperCase() || "U";
@@ -189,7 +192,9 @@ function AdminDashboard() {
             is_completed: session.is_completed as boolean,
             user_name: (() => {
               // Handle both array and object cases for profiles
-              const profile = Array.isArray(session.profiles) ? session.profiles[0] : session.profiles;
+              const profile = Array.isArray(session.profiles)
+                ? session.profiles[0]
+                : session.profiles;
               return profile?.first_name && profile?.last_name
                 ? `${profile.first_name} ${profile.last_name}`
                 : profile?.email?.split("@")[0] || "Unknown User";
@@ -236,16 +241,18 @@ function AdminDashboard() {
   // Session type colors (matching calendar page)
   const getSessionColor = (type: string) => {
     switch (type) {
-      case "speed":
+      case "fractionne":
         return "bg-green-100 text-green-800 border-green-200";
-      case "recovery":
+      case "rando-trail":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "long-run":
+      case "renfo":
         return "bg-red-100 text-red-800 border-red-200";
-      case "interval":
+      case "velo":
         return "bg-blue-100 text-blue-800 border-blue-200";
-      case "tempo":
+      case "combo":
         return "bg-purple-100 text-purple-800 border-purple-200";
+      case "personnalise":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -337,7 +344,6 @@ function AdminDashboard() {
           )}
         </section>
 
-
         {/* Section 2: Weekly Calendar View */}
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -346,7 +352,15 @@ function AdminDashboard() {
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {/* Day Headers */}
             <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
-              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+              {[
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+              ].map((day) => (
                 <div
                   key={day}
                   className="p-3 text-center text-sm font-medium text-gray-600"
@@ -385,9 +399,11 @@ function AdminDashboard() {
                         <div
                           key={session.id}
                           className={`text-xs px-1 py-0.5 rounded border truncate ${getSessionColor(
-                            session.session_type || "recovery"
+                            session.session_type || "fractionne"
                           )}`}
-                          title={`${session.user_name}: ${session.title} - ${session.session_time || ""}`}
+                          title={`${session.user_name}: ${session.title} - ${
+                            session.session_time || ""
+                          }`}
                         >
                           {session.user_name.split(" ")[0]}
                         </div>

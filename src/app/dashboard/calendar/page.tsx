@@ -530,7 +530,7 @@ function CalendarContent() {
       hasConstraints: false,
       rpe: "",
       comments: "",
-      type: "recovery",
+      type: "fractionne",
       selectedRunnerId: "",
     });
     setShowCreateModal(true);
