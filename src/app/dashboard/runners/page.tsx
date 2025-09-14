@@ -33,13 +33,13 @@ interface HealthSurvey {
 
 interface ProgramEnrollment {
   id: string;
-  program_id: number;
+  program_id: string;
   enrolled_at: string;
   is_active: boolean;
   training_programs?: {
     title: string;
     program_type: string;
-  }[];
+  };
 }
 
 interface RunnerDetail {
@@ -98,13 +98,15 @@ export default function RunnersPage() {
             // Get program enrollments with program details
             const { data: enrollments } = await supabase
               .from("user_program_enrollments")
-              .select(`
+              .select(
+                `
                 id, 
                 program_id, 
                 enrolled_at, 
                 is_active,
                 training_programs(title, program_type)
-              `)
+              `
+              )
               .eq("user_id", profile.id)
               .order("enrolled_at", { ascending: false });
 
@@ -152,9 +154,7 @@ export default function RunnersPage() {
 
   const getActiveProgram = (runner: RunnerDetail) => {
     const activeEnrollment = runner.programEnrollments.find((e) => e.is_active);
-    return activeEnrollment && activeEnrollment.training_programs?.[0]
-      ? activeEnrollment.training_programs[0].title
-      : "Program Not Chosen";
+    return activeEnrollment?.training_programs?.title || "Program Not Chosen";
   };
 
   const handleViewProfile = (runner: RunnerDetail) => {
@@ -309,7 +309,7 @@ export default function RunnersPage() {
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => handleViewProfile(runner)}
-                    className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center"
+                    className="bg-purple-100 text-purple-800 border border-purple-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-purple-200 transition-colors duration-200 flex items-center justify-center"
                   >
                     <svg
                       className="w-3 h-3 mr-1"
@@ -328,7 +328,7 @@ export default function RunnersPage() {
                   </button>
                   <button
                     onClick={() => handleViewCalendar(runner)}
-                    className="bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+                    className="bg-yellow-100 text-yellow-800 border border-yellow-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-yellow-200 transition-colors duration-200 flex items-center justify-center"
                   >
                     <svg
                       className="w-3 h-3 mr-1"
@@ -347,7 +347,7 @@ export default function RunnersPage() {
                   </button>
                   <button
                     onClick={() => handleViewHealthSurvey(runner)}
-                    className="bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors duration-200 flex items-center justify-center"
+                    className="bg-green-100 text-green-800 border border-green-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-green-200 transition-colors duration-200 flex items-center justify-center"
                   >
                     <svg
                       className="w-3 h-3 mr-1"
@@ -401,7 +401,6 @@ export default function RunnersPage() {
             </p>
           </div>
         )}
-
       </div>
     </DashboardLayout>
   );

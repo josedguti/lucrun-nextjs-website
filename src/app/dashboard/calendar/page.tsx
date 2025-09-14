@@ -9,7 +9,13 @@ import EmojiPicker from "emoji-picker-react";
 interface TrainingSession {
   id: string;
   title: string;
-  type: "speed" | "recovery" | "long-run" | "interval" | "tempo";
+  type:
+    | "fractionne"
+    | "rando-trail"
+    | "renfo"
+    | "velo"
+    | "combo"
+    | "personnalise";
   date: string; // YYYY-MM-DD format
   time?: string;
   duration?: string;
@@ -32,12 +38,14 @@ function CalendarContent() {
     id: string;
     email?: string;
   } | null>(null);
-  const [runners, setRunners] = useState<{
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-  }[]>([]);
+  const [runners, setRunners] = useState<
+    {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+    }[]
+  >([]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
@@ -57,7 +65,7 @@ function CalendarContent() {
     hasConstraints: false,
     rpe: "",
     comments: "",
-    type: "recovery" as TrainingSession["type"],
+    type: "personnalise" as TrainingSession["type"],
     selectedRunnerId: "",
   });
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -71,7 +79,7 @@ function CalendarContent() {
     hasConstraints: false,
     rpe: "",
     comments: "",
-    type: "recovery" as TrainingSession["type"],
+    type: "personnalise" as TrainingSession["type"],
   });
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const today = new Date();
@@ -133,14 +141,16 @@ function CalendarContent() {
         // Load training sessions - all sessions for admin, user sessions for regular users
         let sessionsQuery = supabase
           .from("training_sessions")
-          .select(`
+          .select(
+            `
             *,
             profiles!training_sessions_user_id_fkey (
               first_name,
               last_name,
               email
             )
-          `)
+          `
+          )
           .order("session_date", { ascending: true });
 
         if (!isAdmin) {
@@ -156,37 +166,36 @@ function CalendarContent() {
         }
 
         // Convert database format to local format
-        const formattedSessions: TrainingSession[] = sessions.map(
-          (session) => {
-            // For admin view, include user name in title
-            const isAdminView = user.email === "luc.run.coach@gmail.com";
-            let sessionTitle = session.title;
-            
-            if (isAdminView && session.profiles) {
-              const userName = session.profiles.first_name && session.profiles.last_name
-                ? `${session.profiles.first_name} ${session.profiles.last_name}`
-                : session.profiles.email?.split('@')[0] || 'Unknown User';
-              sessionTitle = `${userName}: ${session.title}`;
-            }
+        const formattedSessions: TrainingSession[] = sessions.map((session) => {
+          // For admin view, include user name in title
+          const isAdminView = user.email === "luc.run.coach@gmail.com";
+          let sessionTitle = session.title;
 
-            return {
-              id: session.id,
-              title: sessionTitle,
-              type: session.session_type,
-              date: session.session_date,
-              time: session.session_time || undefined,
-              duration: session.duration_minutes
-                ? `${session.duration_minutes} min`
-                : undefined,
-              description: session.description || undefined,
-              isCompleted: session.is_completed || false,
-              hasConstraints: session.has_constraints || false,
-              rpe: session.rpe?.toString() || undefined,
-              comments: session.comments || undefined,
-              user_id: session.user_id, // Include user_id for admin operations
-            };
+          if (isAdminView && session.profiles) {
+            const userName =
+              session.profiles.first_name && session.profiles.last_name
+                ? `${session.profiles.first_name} ${session.profiles.last_name}`
+                : session.profiles.email?.split("@")[0] || "Unknown User";
+            sessionTitle = `${userName}: ${session.title}`;
           }
-        );
+
+          return {
+            id: session.id,
+            title: sessionTitle,
+            type: session.session_type,
+            date: session.session_date,
+            time: session.session_time || undefined,
+            duration: session.duration_minutes
+              ? `${session.duration_minutes} min`
+              : undefined,
+            description: session.description || undefined,
+            isCompleted: session.is_completed || false,
+            hasConstraints: session.has_constraints || false,
+            rpe: session.rpe?.toString() || undefined,
+            comments: session.comments || undefined,
+            user_id: session.user_id, // Include user_id for admin operations
+          };
+        });
 
         setTrainingSessions(formattedSessions);
       } catch (err) {
@@ -202,7 +211,7 @@ function CalendarContent() {
 
   // Handle URL parameters for runner filtering
   useEffect(() => {
-    const runnerParam = searchParams.get('runner');
+    const runnerParam = searchParams.get("runner");
     if (runnerParam && currentUser?.email === "luc.run.coach@gmail.com") {
       setSelectedRunnerFilter(runnerParam);
     }
@@ -295,29 +304,38 @@ function CalendarContent() {
   // Get sessions for a specific date (with optional runner filter)
   const getSessionsForDate = (date: Date) => {
     const dateString = date.toISOString().split("T")[0];
-    let filteredSessions = trainingSessions.filter((session) => session.date === dateString);
-    
+    let filteredSessions = trainingSessions.filter(
+      (session) => session.date === dateString
+    );
+
     // Apply runner filter for admin
-    if (currentUser?.email === "luc.run.coach@gmail.com" && selectedRunnerFilter !== "all") {
-      filteredSessions = filteredSessions.filter((session) => session.user_id === selectedRunnerFilter);
+    if (
+      currentUser?.email === "luc.run.coach@gmail.com" &&
+      selectedRunnerFilter !== "all"
+    ) {
+      filteredSessions = filteredSessions.filter(
+        (session) => session.user_id === selectedRunnerFilter
+      );
     }
-    
+
     return filteredSessions;
   };
 
   // Session type colors
   const getSessionColor = (type: string) => {
     switch (type) {
-      case "speed":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "recovery":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "long-run":
+      case "fractionne":
         return "bg-red-100 text-red-800 border-red-200";
-      case "interval":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "tempo":
+      case "rando-trail":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "renfo":
         return "bg-purple-100 text-purple-800 border-purple-200";
+      case "velo":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "combo":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "personnalise":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -330,7 +348,7 @@ function CalendarContent() {
       e.preventDefault();
       return;
     }
-    
+
     setDraggedSession(session);
     e.dataTransfer.effectAllowed = "move";
   };
@@ -368,7 +386,12 @@ function CalendarContent() {
           return;
         }
 
-        console.log("Session date updated successfully:", draggedSession.id, "to", newDateString);
+        console.log(
+          "Session date updated successfully:",
+          draggedSession.id,
+          "to",
+          newDateString
+        );
 
         // Update local state
         setTrainingSessions((prev) =>
@@ -521,12 +544,12 @@ function CalendarContent() {
   const handleCreateSession = async (e: React.FormEvent) => {
     console.log("handleCreateSession called!");
     e.preventDefault();
-    
+
     if (!currentUser) {
       console.log("No current user");
       return;
     }
-    
+
     if (!newSession.type) {
       console.log("No session type selected");
       return;
@@ -535,21 +558,33 @@ function CalendarContent() {
     // For admin users, check if a runner is selected
     const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
     console.log("Is admin:", isAdmin);
-    
-    if (isAdmin && !newSession.selectedRunnerId) {
-      console.log("Admin but no runner selected");
-      setError("Please select a runner to assign this session to");
-      return;
+
+    // Determine target user ID
+    let targetUserId = currentUser.id;
+    if (isAdmin) {
+      if (selectedRunnerFilter !== "all") {
+        // When viewing specific runner's calendar, use that runner's ID
+        targetUserId = selectedRunnerFilter;
+      } else if (newSession.selectedRunnerId) {
+        // When viewing all runners, use selected runner from dropdown
+        targetUserId = newSession.selectedRunnerId;
+      } else {
+        console.log("Admin but no runner selected");
+        setError("Please select a runner to assign this session to");
+        return;
+      }
     }
 
-    console.log("Creating session:", { newSession, isAdmin, targetUserId: isAdmin ? newSession.selectedRunnerId : currentUser.id });
+    console.log("Creating session:", {
+      newSession,
+      isAdmin,
+      selectedRunnerFilter,
+      targetUserId,
+    });
 
     try {
       setSaving(true);
       setError(null);
-
-      // Use selected runner ID for admin, current user ID for regular users
-      const targetUserId = isAdmin ? newSession.selectedRunnerId : currentUser.id;
 
       const sessionData = sessionToDbFormat(
         {
@@ -564,14 +599,16 @@ function CalendarContent() {
       const { data, error } = await supabase
         .from("training_sessions")
         .insert(sessionData)
-        .select(`
+        .select(
+          `
           *,
           profiles!training_sessions_user_id_fkey (
             first_name,
             last_name,
             email
           )
-        `)
+        `
+        )
         .single();
 
       if (error) {
@@ -583,12 +620,13 @@ function CalendarContent() {
 
       // Convert back to local format and add to state
       let sessionTitle = data.title;
-      
+
       // For admin view, include user name in title
       if (isAdmin && data.profiles) {
-        const userName = data.profiles.first_name && data.profiles.last_name
-          ? `${data.profiles.first_name} ${data.profiles.last_name}`
-          : data.profiles.email?.split('@')[0] || 'Unknown User';
+        const userName =
+          data.profiles.first_name && data.profiles.last_name
+            ? `${data.profiles.first_name} ${data.profiles.last_name}`
+            : data.profiles.email?.split("@")[0] || "Unknown User";
         sessionTitle = `${userName}: ${data.title}`;
       }
 
@@ -651,11 +689,11 @@ function CalendarContent() {
 
       // For admin users, don't filter by currentUser.id since they can edit any session
       const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
-      
+
       // We need to get the original user_id from the session
       // For admin users, we keep the original session's user_id
       // For regular users, we use their own ID
-      const targetUserId = isAdmin 
+      const targetUserId = isAdmin
         ? selectedSession.user_id || currentUser.id // Get from original session or fallback
         : currentUser.id;
 
@@ -668,7 +706,11 @@ function CalendarContent() {
         targetUserId
       );
 
-      console.log("Updating session:", { sessionId: selectedSession.id, sessionData, isAdmin });
+      console.log("Updating session:", {
+        sessionId: selectedSession.id,
+        sessionData,
+        isAdmin,
+      });
 
       // Update the session - admin can update any session, regular users only their own
       let updateQuery = supabase
@@ -728,7 +770,7 @@ function CalendarContent() {
 
       // Check if user is admin
       const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
-      
+
       // Admin can delete any session, regular users can only delete their own
       let deleteQuery = supabase
         .from("training_sessions")
@@ -785,8 +827,13 @@ function CalendarContent() {
 
   const handleCopySession = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedSession || !currentUser || !copySession.targetRunnerId || !copySession.targetDate) {
+
+    if (
+      !selectedSession ||
+      !currentUser ||
+      !copySession.targetRunnerId ||
+      !copySession.targetDate
+    ) {
       setError("Please fill in all required fields for copying the session");
       return;
     }
@@ -821,14 +868,16 @@ function CalendarContent() {
       const { data, error } = await supabase
         .from("training_sessions")
         .insert(sessionData)
-        .select(`
+        .select(
+          `
           *,
           profiles!training_sessions_user_id_fkey (
             first_name,
             last_name,
             email
           )
-        `)
+        `
+        )
         .single();
 
       if (error) {
@@ -840,9 +889,10 @@ function CalendarContent() {
       // Format the new session for display (with runner name for admin view)
       let sessionTitle = data.title;
       if (isAdmin && data.profiles) {
-        const userName = data.profiles.first_name && data.profiles.last_name
-          ? `${data.profiles.first_name} ${data.profiles.last_name}`
-          : data.profiles.email?.split('@')[0] || 'Unknown User';
+        const userName =
+          data.profiles.first_name && data.profiles.last_name
+            ? `${data.profiles.first_name} ${data.profiles.last_name}`
+            : data.profiles.email?.split("@")[0] || "Unknown User";
         sessionTitle = `${userName}: ${data.title}`;
       }
 
@@ -865,11 +915,11 @@ function CalendarContent() {
 
       // Add the new session to local state
       setTrainingSessions((prev) => [...prev, newLocalSession]);
-      
+
       // Close both the copy modal and the main session modal
       closeCopySession();
       closeSessionModal();
-      
+
       console.log("Session copied successfully:", newLocalSession);
     } catch (err) {
       console.error("Error copying session:", err);
@@ -888,7 +938,8 @@ function CalendarContent() {
     useState(false);
 
   // Filter state for admin
-  const [selectedRunnerFilter, setSelectedRunnerFilter] = useState<string>("all");
+  const [selectedRunnerFilter, setSelectedRunnerFilter] =
+    useState<string>("all");
 
   // Copy session state
   const [showCopySession, setShowCopySession] = useState(false);
@@ -1009,7 +1060,9 @@ function CalendarContent() {
                     <option key={runner.id} value={runner.id}>
                       {runner.first_name && runner.last_name
                         ? `${runner.first_name} ${runner.last_name}`
-                        : runner.first_name || runner.email?.split('@')[0] || 'Unknown User'}
+                        : runner.first_name ||
+                          runner.email?.split("@")[0] ||
+                          "Unknown User"}
                     </option>
                   ))}
                 </select>
@@ -1205,7 +1258,9 @@ function CalendarContent() {
                         {sessions.map((session) => (
                           <div
                             key={session.id}
-                            draggable={currentUser?.email === "luc.run.coach@gmail.com"}
+                            draggable={
+                              currentUser?.email === "luc.run.coach@gmail.com"
+                            }
                             onDragStart={(e) => handleDragStart(e, session)}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1214,9 +1269,11 @@ function CalendarContent() {
                             className={`text-xs px-1 py-0.5 rounded border cursor-pointer hover:shadow-sm transition-shadow truncate ${getSessionColor(
                               session.type
                             )}`}
-                            title={`${session.title} - ${
-                              session.time || ""
-                            } ${currentUser?.email === "luc.run.coach@gmail.com" ? "(Admin View)" : "(Click to edit)"}`}
+                            title={`${session.title} - ${session.time || ""} ${
+                              currentUser?.email === "luc.run.coach@gmail.com"
+                                ? "(Admin View)"
+                                : "(Click to edit)"
+                            }`}
                           >
                             {session.title}
                           </div>
@@ -1301,7 +1358,9 @@ function CalendarContent() {
                         {sessions.map((session) => (
                           <div
                             key={session.id}
-                            draggable={currentUser?.email === "luc.run.coach@gmail.com"}
+                            draggable={
+                              currentUser?.email === "luc.run.coach@gmail.com"
+                            }
                             onDragStart={(e) => handleDragStart(e, session)}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1310,9 +1369,11 @@ function CalendarContent() {
                             className={`text-xs px-2 py-1 rounded border cursor-pointer hover:shadow-sm transition-shadow truncate ${getSessionColor(
                               session.type
                             )}`}
-                            title={`${session.title} - ${
-                              session.time || ""
-                            } ${currentUser?.email === "luc.run.coach@gmail.com" ? "(Admin View)" : "(Click to edit)"}`}
+                            title={`${session.title} - ${session.time || ""} ${
+                              currentUser?.email === "luc.run.coach@gmail.com"
+                                ? "(Admin View)"
+                                : "(Click to edit)"
+                            }`}
                           >
                             {session.title}
                           </div>
@@ -1329,15 +1390,16 @@ function CalendarContent() {
         {/* Training Session Legend */}
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Training Types
+            Types de séance
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             {[
-              { type: "speed", label: "Speed Session" },
-              { type: "recovery", label: "Recovery Run" },
-              { type: "long-run", label: "Long Run" },
-              { type: "interval", label: "Interval Training" },
-              { type: "tempo", label: "Tempo Run" },
+              { type: "fractionne", label: "Fractionné" },
+              { type: "rando-trail", label: "Rando Trail" },
+              { type: "renfo", label: "Renfo" },
+              { type: "velo", label: "Vélo" },
+              { type: "combo", label: "Combo" },
+              { type: "personnalise", label: "Personnalisé" },
             ].map(({ type, label }) => (
               <div key={type} className="flex items-center gap-2">
                 <div
@@ -1377,42 +1439,76 @@ function CalendarContent() {
                 </button>
               </div>
 
-              <form onSubmit={(e) => {
-                console.log('Form submitted - calling handleCreateSession');
-                e.preventDefault();
-                handleCreateSession(e);
-              }} className="p-6">
+              <form
+                onSubmit={(e) => {
+                  console.log("Form submitted - calling handleCreateSession");
+                  e.preventDefault();
+                  handleCreateSession(e);
+                }}
+                className="p-6"
+              >
                 {/* Runner Selection for Admin */}
                 {currentUser?.email === "luc.run.coach@gmail.com" && (
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Assign to Runner *
-                    </label>
-                    <select
-                      value={newSession.selectedRunnerId}
-                      onChange={(e) =>
-                        setNewSession({
-                          ...newSession,
-                          selectedRunnerId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      required
-                    >
-                      <option value="">Select a runner...</option>
-                      {runners.length === 0 ? (
-                        <option value="" disabled>No runners found</option>
-                      ) : (
-                        runners.map((runner) => (
-                          <option key={runner.id} value={runner.id}>
-                            {runner.first_name && runner.last_name
-                              ? `${runner.first_name} ${runner.last_name}`
-                              : runner.first_name || runner.email?.split('@')[0] || 'Unknown User'}
-                            {runner.email && ` (${runner.email})`}
-                          </option>
-                        ))
-                      )}
-                    </select>
+                    {selectedRunnerFilter !== "all" ? (
+                      // Show selected runner info when viewing specific runner's calendar
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Assigning to Runner
+                        </label>
+                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900">
+                          {(() => {
+                            const selectedRunner = runners.find(
+                              (r) => r.id === selectedRunnerFilter
+                            );
+                            return selectedRunner
+                              ? selectedRunner.first_name &&
+                                selectedRunner.last_name
+                                ? `${selectedRunner.first_name} ${selectedRunner.last_name}`
+                                : selectedRunner.first_name ||
+                                  selectedRunner.email?.split("@")[0] ||
+                                  "Unknown User"
+                              : "Selected Runner";
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      // Show dropdown when viewing all runners
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Assign to Runner *
+                        </label>
+                        <select
+                          value={newSession.selectedRunnerId}
+                          onChange={(e) =>
+                            setNewSession({
+                              ...newSession,
+                              selectedRunnerId: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          required
+                        >
+                          <option value="">Select a runner...</option>
+                          {runners.length === 0 ? (
+                            <option value="" disabled>
+                              No runners found
+                            </option>
+                          ) : (
+                            runners.map((runner) => (
+                              <option key={runner.id} value={runner.id}>
+                                {runner.first_name && runner.last_name
+                                  ? `${runner.first_name} ${runner.last_name}`
+                                  : runner.first_name ||
+                                    runner.email?.split("@")[0] ||
+                                    "Unknown User"}
+                                {runner.email && ` (${runner.email})`}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1425,7 +1521,7 @@ function CalendarContent() {
                     <select
                       value={newSession.type}
                       onChange={(e) => {
-                        console.log('Session type changed:', e.target.value);
+                        console.log("Session type changed:", e.target.value);
                         setNewSession({
                           ...newSession,
                           type: e.target.value as TrainingSession["type"],
@@ -1434,11 +1530,12 @@ function CalendarContent() {
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     >
-                      <option value="speed">Speed Session</option>
-                      <option value="recovery">Recovery Run</option>
-                      <option value="long-run">Long Run</option>
-                      <option value="interval">Interval Training</option>
-                      <option value="tempo">Tempo Run</option>
+                      <option value="fractionne">Fractionné</option>
+                      <option value="rando-trail">Rando Trail</option>
+                      <option value="renfo">Renfo</option>
+                      <option value="velo">Vélo</option>
+                      <option value="combo">Combo</option>
+                      <option value="personnalise">Personnalisé</option>
                     </select>
                   </div>
                   <div>
@@ -1510,7 +1607,9 @@ function CalendarContent() {
                           onChange={() =>
                             setNewSession({ ...newSession, isCompleted: true })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Oui
@@ -1523,7 +1622,9 @@ function CalendarContent() {
                           onChange={() =>
                             setNewSession({ ...newSession, isCompleted: false })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Non
@@ -1548,7 +1649,9 @@ function CalendarContent() {
                               hasConstraints: true,
                             })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Oui
@@ -1564,7 +1667,9 @@ function CalendarContent() {
                               hasConstraints: false,
                             })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Non
@@ -1585,10 +1690,16 @@ function CalendarContent() {
                       onChange={(e) =>
                         setNewSession({ ...newSession, rpe: e.target.value })
                       }
-                      disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                      disabled={
+                        currentUser?.email === "luc.run.coach@gmail.com"
+                      }
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${getRpeBackgroundColor(
                         newSession.rpe
-                      )} ${currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      )} ${
+                        currentUser?.email === "luc.run.coach@gmail.com"
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : ""
+                      }`}
                     >
                       <option value="">Sélectionner</option>
                       <option value="1">1 - 😌 Très facile</option>
@@ -1618,7 +1729,9 @@ function CalendarContent() {
                     rows={3}
                     disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                      currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                      currentUser?.email === "luc.run.coach@gmail.com"
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
                     }`}
                   />
                   {currentUser?.email !== "luc.run.coach@gmail.com" && (
@@ -1655,8 +1768,8 @@ function CalendarContent() {
                     type="submit"
                     disabled={saving}
                     onClick={() => {
-                      console.log('Create button clicked');
-                      console.log('Form data:', newSession);
+                      console.log("Create button clicked");
+                      console.log("Form data:", newSession);
                       // Don't prevent default - let form submission happen
                     }}
                     className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
@@ -1712,11 +1825,14 @@ function CalendarContent() {
                       onChange={(e) => {
                         // For admin users, preserve the original title structure with runner name
                         let newTitle = e.target.value;
-                        if (currentUser?.email === "luc.run.coach@gmail.com" && selectedSession) {
+                        if (
+                          currentUser?.email === "luc.run.coach@gmail.com" &&
+                          selectedSession
+                        ) {
                           const originalTitle = selectedSession.title;
                           // Check if the original title contains a colon (indicating it has a runner name)
-                          if (originalTitle.includes(':')) {
-                            const runnerName = originalTitle.split(':')[0];
+                          if (originalTitle.includes(":")) {
+                            const runnerName = originalTitle.split(":")[0];
                             newTitle = `${runnerName}: ${e.target.value}`;
                           }
                         }
@@ -1726,16 +1842,21 @@ function CalendarContent() {
                           title: newTitle,
                         });
                       }}
-                      disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
+                      disabled={
+                        currentUser?.email !== "luc.run.coach@gmail.com"
+                      }
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                        currentUser?.email !== "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                        currentUser?.email !== "luc.run.coach@gmail.com"
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : ""
                       }`}
                     >
-                      <option value="speed">Speed Session</option>
-                      <option value="recovery">Recovery Run</option>
-                      <option value="long-run">Long Run</option>
-                      <option value="interval">Interval Training</option>
-                      <option value="tempo">Tempo Run</option>
+                      <option value="fractionne">Fractionné</option>
+                      <option value="rando-trail">Rando Trail</option>
+                      <option value="renfo">Renfo</option>
+                      <option value="velo">Vélo</option>
+                      <option value="combo">Combo</option>
+                      <option value="personnalise">Personnalisé</option>
                     </select>
                   </div>
                   <div>
@@ -1748,9 +1869,13 @@ function CalendarContent() {
                       onChange={(e) =>
                         setEditSession({ ...editSession, date: e.target.value })
                       }
-                      disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
+                      disabled={
+                        currentUser?.email !== "luc.run.coach@gmail.com"
+                      }
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                        currentUser?.email !== "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                        currentUser?.email !== "luc.run.coach@gmail.com"
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : ""
                       }`}
                       required
                     />
@@ -1773,7 +1898,9 @@ function CalendarContent() {
                     rows={3}
                     disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                      currentUser?.email !== "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                      currentUser?.email !== "luc.run.coach@gmail.com"
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
                     }`}
                   />
                   <div className="flex justify-start mt-1">
@@ -1820,7 +1947,9 @@ function CalendarContent() {
                               isCompleted: true,
                             })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Oui
@@ -1836,7 +1965,9 @@ function CalendarContent() {
                               isCompleted: false,
                             })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Non
@@ -1861,7 +1992,9 @@ function CalendarContent() {
                               hasConstraints: true,
                             })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Oui
@@ -1877,7 +2010,9 @@ function CalendarContent() {
                               hasConstraints: false,
                             })
                           }
-                          disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                          disabled={
+                            currentUser?.email === "luc.run.coach@gmail.com"
+                          }
                           className="mr-2"
                         />
                         Non
@@ -1898,10 +2033,16 @@ function CalendarContent() {
                       onChange={(e) =>
                         setEditSession({ ...editSession, rpe: e.target.value })
                       }
-                      disabled={currentUser?.email === "luc.run.coach@gmail.com"}
+                      disabled={
+                        currentUser?.email === "luc.run.coach@gmail.com"
+                      }
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${getRpeBackgroundColor(
                         editSession.rpe
-                      )} ${currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      )} ${
+                        currentUser?.email === "luc.run.coach@gmail.com"
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : ""
+                      }`}
                     >
                       <option value="">Sélectionner</option>
                       <option value="1">1 - 😌 Très facile</option>
@@ -1934,7 +2075,9 @@ function CalendarContent() {
                     rows={3}
                     disabled={currentUser?.email === "luc.run.coach@gmail.com"}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
-                      currentUser?.email === "luc.run.coach@gmail.com" ? "bg-gray-100 cursor-not-allowed" : ""
+                      currentUser?.email === "luc.run.coach@gmail.com"
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
                     }`}
                   />
                   <div className="flex justify-start mt-1">
@@ -1985,14 +2128,30 @@ function CalendarContent() {
                         disabled={saving}
                         className="px-4 py-2 text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
                         </svg>
                         <span>Copy Session</span>
                       </button>
                     )}
                   </div>
-                  <div className={`flex gap-3 ${currentUser?.email !== "luc.run.coach@gmail.com" ? "ml-auto" : ""}`}>
+                  <div
+                    className={`flex gap-3 ${
+                      currentUser?.email !== "luc.run.coach@gmail.com"
+                        ? "ml-auto"
+                        : ""
+                    }`}
+                  >
                     <button
                       type="button"
                       onClick={closeSessionModal}
@@ -2052,7 +2211,11 @@ function CalendarContent() {
                   <h3 className="text-sm font-medium text-gray-900 mb-2">
                     Copying Session:
                   </h3>
-                  <div className={`inline-block px-2 py-1 rounded text-xs ${getSessionColor(selectedSession.type)}`}>
+                  <div
+                    className={`inline-block px-2 py-1 rounded text-xs ${getSessionColor(
+                      selectedSession.type
+                    )}`}
+                  >
                     {selectedSession.type}
                   </div>
                   {selectedSession.description && (
@@ -2080,13 +2243,17 @@ function CalendarContent() {
                   >
                     <option value="">Select a runner...</option>
                     {runners.length === 0 ? (
-                      <option value="" disabled>No runners found</option>
+                      <option value="" disabled>
+                        No runners found
+                      </option>
                     ) : (
                       runners.map((runner) => (
                         <option key={runner.id} value={runner.id}>
                           {runner.first_name && runner.last_name
                             ? `${runner.first_name} ${runner.last_name}`
-                            : runner.first_name || runner.email?.split('@')[0] || 'Unknown User'}
+                            : runner.first_name ||
+                              runner.email?.split("@")[0] ||
+                              "Unknown User"}
                           {runner.email && ` (${runner.email})`}
                         </option>
                       ))
@@ -2124,7 +2291,11 @@ function CalendarContent() {
                   </button>
                   <button
                     type="submit"
-                    disabled={saving || !copySession.targetRunnerId || !copySession.targetDate}
+                    disabled={
+                      saving ||
+                      !copySession.targetRunnerId ||
+                      !copySession.targetDate
+                    }
                     className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
                     {saving && (
