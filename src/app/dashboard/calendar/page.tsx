@@ -2214,7 +2214,7 @@ function CalendarContent() {
                   </h3>
                   <p className="text-gray-600 mb-6">
                     Êtes-vous sûr de vouloir supprimer cette séance
-                    d'entraînement?
+                    d&apos;entraînement?
                     <br />
                     <span className="text-sm text-gray-500">
                       Cette action ne peut pas être annulée.

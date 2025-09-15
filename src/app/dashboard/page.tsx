@@ -321,7 +321,7 @@ function AdminDashboard() {
       hasConstraints: session.has_constraints || false,
       rpe: session.rpe?.toString() || "",
       comments: session.comments || "",
-      type: session.session_type as any, // Fix type casting issue
+      type: session.session_type,
     });
     setShowSessionModal(true);
   };
