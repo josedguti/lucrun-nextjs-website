@@ -3,7 +3,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import Link from "next/link";
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -559,6 +559,7 @@ function AdminDashboard() {
     comments: "",
     type: "personnalise" as string,
   });
+  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {

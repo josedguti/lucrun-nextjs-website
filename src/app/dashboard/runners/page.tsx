@@ -97,7 +97,7 @@ export default function RunnersPage() {
               .single();
 
             // Get program enrollments with program details
-            const { data: enrollments } = await supabase
+            const { data: rawEnrollments } = await supabase
               .from("user_program_enrollments")
               .select(
                 `
@@ -110,6 +110,25 @@ export default function RunnersPage() {
               )
               .eq("user_id", profile.id)
               .order("enrolled_at", { ascending: false });
+
+            // Transform enrollments to match our interface
+            const enrollments: ProgramEnrollment[] = (rawEnrollments || []).map(
+              (enrollment) => {
+                const trainingPrograms =
+                  enrollment.training_programs as unknown;
+                return {
+                  id: enrollment.id,
+                  program_id: enrollment.program_id,
+                  enrolled_at: enrollment.enrolled_at,
+                  is_active: enrollment.is_active,
+                  training_programs: Array.isArray(trainingPrograms)
+                    ? trainingPrograms[0]
+                    : (trainingPrograms as
+                        | { title: string; program_type: string }
+                        | undefined),
+                };
+              }
+            );
 
             // Get training sessions count
             const { data: sessions } = await supabase
@@ -124,7 +143,7 @@ export default function RunnersPage() {
             return {
               profile,
               healthSurvey: healthSurvey || null,
-              programEnrollments: enrollments || [],
+              programEnrollments: enrollments,
               sessionCount,
               completedSessions,
             };

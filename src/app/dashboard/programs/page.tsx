@@ -253,11 +253,13 @@ export default function Programs() {
           setHasActiveEnrollment(true);
           setUserEnrollments(enrollments.map((e) => e.program_id));
           // Get the program type from the first active enrollment
-          const programData = enrollments[0].training_programs as {
-            program_type: string;
-          } | null;
-          if (programData) {
-            setEnrolledProgramType(programData.program_type);
+          const programData = enrollments[0].training_programs;
+          if (
+            programData &&
+            typeof programData === "object" &&
+            "program_type" in programData
+          ) {
+            setEnrolledProgramType(programData.program_type as string);
           }
         }
       } catch (err) {
