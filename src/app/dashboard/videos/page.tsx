@@ -1,7 +1,9 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
 
 interface Video {
@@ -16,6 +18,54 @@ interface Video {
 export default function Videos() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClient();
+
+  // Check if user is approved (is_active)
+  useEffect(() => {
+    async function checkApproval() {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          router.push("/login");
+          return;
+        }
+
+        // Check if user is admin
+        const isAdmin = user.email === "luc.run.coach@gmail.com";
+
+        // For non-admin users, check if they are approved (is_active)
+        if (!isAdmin) {
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("is_active")
+            .eq("id", user.id)
+            .single();
+
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+          }
+
+          // Redirect if not approved
+          if (!profile?.is_active) {
+            router.push("/dashboard");
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking approval:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    checkApproval();
+  }, [router, supabase]);
 
   const videos: Video[] = [
     {
@@ -115,6 +165,21 @@ export default function Videos() {
     // Here you would typically open a video player modal or navigate to a video player page
     alert(`Playing video: ${videos.find((v) => v.id === videoId)?.title}`);
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

@@ -20,6 +20,7 @@ interface RunnerProfile {
   running_level: string | null;
   current_weekly_km: string | null;
   training_hours_per_week: string | null;
+  is_active: boolean;
 }
 
 interface HealthSurvey {
@@ -39,7 +40,7 @@ interface ProgramEnrollment {
   training_programs?: {
     title: string;
     program_type: string;
-  }[];
+  };
 }
 
 interface RunnerDetail {
@@ -66,7 +67,7 @@ export default function RunnersPage() {
             `
             id, first_name, last_name, email, profile_completed, created_at,
             phone, date_of_birth, city, state, country,
-            running_level, current_weekly_km, training_hours_per_week
+            running_level, current_weekly_km, training_hours_per_week, is_active
           `
           )
           .neq("email", "luc.run.coach@gmail.com")
@@ -154,9 +155,7 @@ export default function RunnersPage() {
 
   const getActiveProgram = (runner: RunnerDetail) => {
     const activeEnrollment = runner.programEnrollments.find((e) => e.is_active);
-    return (
-      activeEnrollment?.training_programs?.[0]?.title || "Program Not Chosen"
-    );
+    return activeEnrollment?.training_programs?.title || "Program Not Chosen";
   };
 
   const handleViewProfile = (runner: RunnerDetail) => {
@@ -171,6 +170,35 @@ export default function RunnersPage() {
   const handleViewHealthSurvey = (runner: RunnerDetail) => {
     // Navigate to health survey page with user ID parameter
     router.push(`/dashboard/health-survey?userId=${runner.profile.id}`);
+  };
+
+  const handleToggleApproval = async (runner: RunnerDetail) => {
+    const newActiveStatus = !runner.profile.is_active;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_active: newActiveStatus })
+        .eq("id", runner.profile.id);
+
+      if (error) {
+        console.error("Error updating approval status:", error);
+        alert("Failed to update approval status. Please try again.");
+        return;
+      }
+
+      // Update local state
+      setRunners((prevRunners) =>
+        prevRunners.map((r) =>
+          r.profile.id === runner.profile.id
+            ? { ...r, profile: { ...r.profile, is_active: newActiveStatus } }
+            : r
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling approval:", err);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   if (loading) {
@@ -211,27 +239,21 @@ export default function RunnersPage() {
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-green-600">
-              {runners.filter((r) => getRunnerStatus(r) === "Ready").length}
+              {runners.filter((r) => r.profile.is_active).length}
             </div>
-            <div className="text-sm text-gray-600">Ready to Start</div>
+            <div className="text-sm text-gray-600">Approved & Active</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-yellow-600">
-              {
-                runners.filter((r) => getRunnerStatus(r) === "In Progress")
-                  .length
-              }
+              {runners.filter((r) => !r.profile.is_active).length}
             </div>
-            <div className="text-sm text-gray-600">In Progress</div>
+            <div className="text-sm text-gray-600">Pending Approval</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-gray-600">
-              {
-                runners.filter((r) => getRunnerStatus(r) === "Not Started")
-                  .length
-              }
+            <div className="text-2xl font-bold text-blue-600">
+              {runners.filter((r) => getRunnerStatus(r) === "Ready").length}
             </div>
-            <div className="text-sm text-gray-600">Not Started</div>
+            <div className="text-sm text-gray-600">Setup Complete</div>
           </div>
         </div>
 
@@ -368,8 +390,48 @@ export default function RunnersPage() {
                   </button>
                 </div>
 
-                {/* Join Date */}
+                {/* Approval Toggle */}
                 <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">
+                      Approved:
+                    </span>
+                    <button
+                      onClick={() => handleToggleApproval(runner)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        runner.profile.is_active
+                          ? "bg-green-600"
+                          : "bg-gray-300"
+                      }`}
+                      title={
+                        runner.profile.is_active
+                          ? "Click to revoke approval"
+                          : "Click to approve runner"
+                      }
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          runner.profile.is_active
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {runner.profile.is_active && (
+                    <p className="text-xs text-green-600 mt-2 text-center">
+                      ✓ Active - Can view calendar
+                    </p>
+                  )}
+                  {!runner.profile.is_active && (
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      Pending approval
+                    </p>
+                  )}
+                </div>
+
+                {/* Join Date */}
+                <div className="mt-2 pt-2 border-t border-gray-200">
                   <p className="text-xs text-gray-500 text-center">
                     Joined{" "}
                     {new Date(runner.profile.created_at).toLocaleDateString()}

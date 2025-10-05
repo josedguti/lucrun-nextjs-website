@@ -126,6 +126,25 @@ function CalendarContent() {
         // Check if user is admin
         const isAdmin = user.email === "luc.run.coach@gmail.com";
 
+        // For non-admin users, check if they are approved (is_active)
+        if (!isAdmin) {
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("is_active")
+            .eq("id", user.id)
+            .single();
+
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+          }
+
+          // Redirect if not approved
+          if (!profile?.is_active) {
+            router.push("/dashboard");
+            return;
+          }
+        }
+
         // If admin, also load all runners for the dropdown
         if (isAdmin) {
           const { data: runnersData, error: runnersError } = await supabase
@@ -2116,17 +2135,17 @@ function CalendarContent() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-between">
-                  <div className="flex gap-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-2">
                     {currentUser?.email === "luc.run.coach@gmail.com" && (
                       <button
                         type="button"
                         onClick={handleDeleteSession}
                         disabled={saving}
-                        className="px-4 py-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        className="px-3 py-1.5 text-sm text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1.5"
                       >
                         {saving && (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
                         )}
                         <span>{saving ? "Deleting..." : "Supprimer"}</span>
                       </button>
@@ -2136,10 +2155,10 @@ function CalendarContent() {
                         type="button"
                         onClick={openCopySession}
                         disabled={saving}
-                        className="px-4 py-2 text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        className="px-3 py-1.5 text-sm text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1.5"
                       >
                         <svg
-                          className="w-4 h-4"
+                          className="w-3.5 h-3.5"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -2156,7 +2175,7 @@ function CalendarContent() {
                     )}
                   </div>
                   <div
-                    className={`flex gap-3 ${
+                    className={`flex gap-2 ${
                       currentUser?.email !== "luc.run.coach@gmail.com"
                         ? "ml-auto"
                         : ""
@@ -2166,17 +2185,17 @@ function CalendarContent() {
                       type="button"
                       onClick={closeSessionModal}
                       disabled={saving}
-                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Annuler
                     </button>
                     <button
                       type="submit"
                       disabled={saving}
-                      className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1.5"
                     >
                       {saving && (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                       )}
                       <span>{saving ? "Updating..." : "Modifier"}</span>
                     </button>
@@ -2214,7 +2233,7 @@ function CalendarContent() {
                   </h3>
                   <p className="text-gray-600 mb-6">
                     Êtes-vous sûr de vouloir supprimer cette séance
-                    d&apos;entraînement?
+                    d'entraînement?
                     <br />
                     <span className="text-sm text-gray-500">
                       Cette action ne peut pas être annulée.

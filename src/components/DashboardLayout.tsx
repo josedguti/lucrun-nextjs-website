@@ -15,6 +15,7 @@ interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  is_active: boolean;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -36,7 +37,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       try {
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("first_name, last_name, email")
+          .select("first_name, last_name, email, is_active")
           .eq("id", user.id)
           .single();
 
@@ -47,6 +48,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             first_name: null,
             last_name: null,
             email: user.email || null,
+            is_active: false,
           });
         } else {
           setUserProfile(profile);
@@ -58,6 +60,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           first_name: null,
           last_name: null,
           email: user.email || null,
+          is_active: false,
         });
       } finally {
         setProfileLoading(false);
@@ -201,6 +204,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
         </svg>
       ),
+      requiresApproval: false,
     },
     {
       name: "Health Survey",
@@ -220,6 +224,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
         </svg>
       ),
+      requiresApproval: false,
     },
     {
       name: "Programs",
@@ -239,6 +244,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
         </svg>
       ),
+      requiresApproval: false,
     },
     {
       name: "Calendar",
@@ -258,6 +264,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
         </svg>
       ),
+      requiresApproval: true,
     },
     {
       name: "Videos",
@@ -277,10 +284,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
         </svg>
       ),
+      requiresApproval: true,
     },
   ];
 
-  const navigation = isAdmin ? adminNavigation : regularNavigation;
+  // Filter navigation based on approval status for regular users
+  const filteredRegularNavigation = regularNavigation.filter((item) => {
+    if (item.requiresApproval && userProfile && !userProfile.is_active) {
+      return false; // Hide items that require approval if user is not active
+    }
+    return true;
+  });
+
+  const navigation = isAdmin ? adminNavigation : filteredRegularNavigation;
 
   return (
     <ProtectedRoute>

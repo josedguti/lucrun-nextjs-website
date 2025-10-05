@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { PopupButton } from "react-calendly";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ChecklistItem {
@@ -43,6 +42,498 @@ interface TrainingSession {
   rpe?: number;
   comments?: string;
   duration_minutes?: number;
+}
+
+// Runner Weekly Calendar Component
+function RunnerWeeklyCalendar() {
+  const [weekSessions, setWeekSessions] = useState<TrainingSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSession, setSelectedSession] =
+    useState<TrainingSession | null>(null);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last week, 1 = next week
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchWeekSessions = async () => {
+      try {
+        setLoading(true);
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Calculate week range based on offset
+        const today = new Date();
+        const baseDate = new Date(today);
+        baseDate.setDate(today.getDate() + weekOffset * 7);
+
+        const weekStart = new Date(baseDate);
+        weekStart.setDate(baseDate.getDate() - ((baseDate.getDay() + 6) % 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+
+        // Fetch sessions for the selected week
+        const { data: sessions, error } = await supabase
+          .from("training_sessions")
+          .select("*")
+          .eq("user_id", user.id)
+          .gte("session_date", weekStart.toISOString().split("T")[0])
+          .lte("session_date", weekEnd.toISOString().split("T")[0])
+          .order("session_date", { ascending: true });
+
+        if (error) throw error;
+
+        const formattedSessions = (sessions || []).map((session) => ({
+          id: session.id,
+          title: session.title,
+          user_id: session.user_id,
+          session_date: session.session_date,
+          session_time: session.session_time,
+          session_type: session.session_type,
+          is_completed: session.is_completed,
+          description: session.description,
+          has_constraints: session.has_constraints,
+          rpe: session.rpe,
+          comments: session.comments,
+          duration_minutes: session.duration_minutes,
+          user_name: "",
+          program_name: "",
+        }));
+
+        setWeekSessions(formattedSessions);
+      } catch (error) {
+        console.error("Error fetching week sessions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWeekSessions();
+  }, [supabase, weekOffset]);
+
+  const getWeekDates = () => {
+    const today = new Date();
+    const baseDate = new Date(today);
+    baseDate.setDate(today.getDate() + weekOffset * 7);
+
+    const weekStart = new Date(baseDate);
+    weekStart.setDate(baseDate.getDate() - ((baseDate.getDay() + 6) % 7));
+
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const getWeekRangeText = () => {
+    const dates = getWeekDates();
+    const start = dates[0];
+    const end = dates[6];
+
+    if (start.getMonth() === end.getMonth()) {
+      return `${start.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+      })} - ${end.getDate()}, ${end.getFullYear()}`;
+    } else {
+      return `${start.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })} - ${end.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })}, ${end.getFullYear()}`;
+    }
+  };
+
+  const goToPreviousWeek = () => {
+    setWeekOffset(weekOffset - 1);
+  };
+
+  const goToNextWeek = () => {
+    setWeekOffset(weekOffset + 1);
+  };
+
+  const goToCurrentWeek = () => {
+    setWeekOffset(0);
+  };
+
+  const getSessionsForDate = (date: Date) => {
+    const dateString = date.toISOString().split("T")[0];
+    return weekSessions.filter(
+      (session) => session.session_date === dateString
+    );
+  };
+
+  const getSessionColor = (type: string) => {
+    switch (type) {
+      case "fractionne":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "rando-trail":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "renfo":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "velo":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "combo":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "personnalise":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const openSessionModal = (session: TrainingSession) => {
+    setSelectedSession(session);
+    setShowSessionModal(true);
+  };
+
+  const closeSessionModal = () => {
+    setShowSessionModal(false);
+    setSelectedSession(null);
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading your calendar...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const weekDates = getWeekDates();
+  const today = new Date();
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto">
+        {/* Header with Navigation */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {weekOffset === 0
+                  ? "This Week's Training"
+                  : "Training Schedule"}
+              </h1>
+              <p className="text-lg text-gray-600">{getWeekRangeText()}</p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {/* Previous Week Button */}
+              <button
+                onClick={goToPreviousWeek}
+                className="p-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+                title="Previous week"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+
+              {/* Today Button (only show if not on current week) */}
+              {weekOffset !== 0 && (
+                <button
+                  onClick={goToCurrentWeek}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Today
+                </button>
+              )}
+
+              {/* Next Week Button */}
+              <button
+                onClick={goToNextWeek}
+                className="p-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+                title="Next week"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Weekly Calendar */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
+            {[
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday",
+            ].map((day) => (
+              <div
+                key={day}
+                className="p-3 text-center text-sm font-medium text-gray-600"
+              >
+                {day.slice(0, 3)}
+              </div>
+            ))}
+          </div>
+
+          {/* Week Days */}
+          <div className="grid grid-cols-7 gap-1 p-4">
+            {weekDates.map((date, index) => {
+              const sessionsForDate = getSessionsForDate(date);
+              const isToday = date.toDateString() === today.toDateString();
+
+              return (
+                <div
+                  key={index}
+                  className={`h-56 border rounded-lg p-2 transition-colors relative ${
+                    isToday
+                      ? "bg-blue-50 border-blue-300"
+                      : "bg-white border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div
+                      className={`text-lg font-semibold ${
+                        isToday ? "text-blue-600" : "text-gray-900"
+                      }`}
+                    >
+                      {date.getDate()}
+                    </div>
+                  </div>
+
+                  {/* Training Sessions - Scrollable */}
+                  <div className="space-y-1 overflow-y-auto max-h-44 scrollbar-hide">
+                    {sessionsForDate.map((session) => (
+                      <div
+                        key={session.id}
+                        onClick={() => openSessionModal(session)}
+                        className={`text-xs px-2 py-2 rounded border cursor-pointer hover:shadow-sm hover:scale-105 transition-all ${getSessionColor(
+                          session.session_type || "fractionne"
+                        )}`}
+                      >
+                        <div className="font-medium">{session.title}</div>
+                        {session.is_completed && (
+                          <div className="text-xs mt-1">✓ Completed</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quick Links */}
+        <div className="mt-8 grid md:grid-cols-3 gap-4">
+          <Link
+            href="/dashboard/calendar"
+            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Full Calendar</h3>
+                <p className="text-sm text-gray-600">View all sessions</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/videos"
+            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Training Videos</h3>
+                <p className="text-sm text-gray-600">Watch tutorials</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/profile"
+            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">My Profile</h3>
+                <p className="text-sm text-gray-600">Update info</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Session Details Modal */}
+        {showSessionModal && selectedSession && (
+          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Session Details
+                </h2>
+                <button
+                  onClick={closeSessionModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {selectedSession.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {new Date(selectedSession.session_date).toLocaleDateString(
+                      "en-US",
+                      {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </p>
+                </div>
+
+                {selectedSession.description && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {selectedSession.description}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2 mb-4">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${getSessionColor(
+                      selectedSession.session_type
+                    )}`}
+                  >
+                    {selectedSession.session_type}
+                  </span>
+                  {selectedSession.is_completed && (
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      ✓ Completed
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <Link
+                    href="/dashboard/calendar"
+                    className="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    View in Full Calendar
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
 }
 
 function AdminDashboard() {
@@ -90,15 +581,16 @@ function AdminDashboard() {
         const nextWeekEnd = new Date(nextWeekStart);
         nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
 
-        // 1. Fetch runners in progress (incomplete profiles)
+        // 1. Fetch runners awaiting approval (completed setup but not active)
         const { data: profiles, error: profileError } = await supabase
           .from("profiles")
           .select(
             `
-            id, first_name, last_name, email, profile_completed, created_at
+            id, first_name, last_name, email, profile_completed, created_at, is_active
           `
           )
           .neq("email", "luc.run.coach@gmail.com")
+          .eq("is_active", false)
           .order("created_at", { ascending: false });
 
         if (profileError) throw profileError;
@@ -147,21 +639,16 @@ function AdminDashboard() {
             ? profile.first_name[0].toUpperCase()
             : profile.email?.[0].toUpperCase() || "U";
 
-          // If not fully complete, add to in-progress
-          if (!profileCompleted || !healthCompleted || !programEnrolled) {
-            const completionSteps = [];
-            if (!profileCompleted) completionSteps.push("Profile");
-            if (!healthCompleted) completionSteps.push("Health Survey");
-            if (!programEnrolled) completionSteps.push("Program Selection");
-
+          // Only show runners who have completed ALL 3 steps but are not yet approved
+          if (profileCompleted && healthCompleted && programEnrolled) {
             runnersProgressData.push({
               id: profile.id,
               name: runnerName,
               email: profile.email || "",
               program: programName,
               avatar,
-              status: "in-progress",
-              completionSteps,
+              status: "ready",
+              completionSteps: [],
             });
           }
         }
@@ -459,22 +946,22 @@ function AdminDashboard() {
           </p>
         </div>
 
-        {/* Section 1: Runners In Progress */}
+        {/* Section 1: Runners Awaiting Approval */}
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Runners Completing Their Profile ({runnersInProgress.length})
+            Runners Awaiting Your Approval ({runnersInProgress.length})
           </h2>
           {runnersInProgress.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {runnersInProgress.map((runner) => (
                 <div
                   key={runner.id}
-                  className="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-400"
+                  className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-400 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <span className="text-yellow-700 font-semibold">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-700 font-semibold">
                           {runner.avatar}
                         </span>
                       </div>
@@ -489,18 +976,35 @@ function AdminDashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-600 mb-2">Pending:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {runner.completionSteps?.map((step) => (
-                        <span
-                          key={step}
-                          className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
-                        >
-                          {step}
-                        </span>
-                      ))}
+                  <div className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
+                    <div className="flex items-center text-green-700 text-sm">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="font-medium">Setup Complete</span>
                     </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-xs text-gray-600 mb-2">
+                      <strong>Action needed:</strong> Approve this runner in the
+                      Runners section
+                    </p>
+                    <button
+                      onClick={() => router.push("/dashboard/runners")}
+                      className="w-full text-xs bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Go to Runners →
+                    </button>
                   </div>
                 </div>
               ))}
@@ -508,7 +1012,7 @@ function AdminDashboard() {
           ) : (
             <div className="bg-white rounded-lg shadow p-6 text-center">
               <p className="text-gray-500">
-                All runners have completed their setup! 🎉
+                No runners awaiting approval. All caught up! 🎉
               </p>
             </div>
           )}
@@ -1056,6 +1560,8 @@ function DashboardContent() {
   const [successType, setSuccessType] = useState<string | null>(null);
   const [meetingScheduled, setMeetingScheduled] = useState(false);
   const [showMeetingConfirmation, setShowMeetingConfirmation] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+  const [checkingApproval, setCheckingApproval] = useState(true);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
     {
       id: "profile",
@@ -1110,16 +1616,22 @@ function DashboardContent() {
       } = await supabase.auth.getUser();
 
       if (!userError && user) {
-        // Check profile completion
+        // Check profile completion and approval status
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("profile_completed")
+          .select("profile_completed, is_active")
           .eq("id", user.id)
           .single();
 
         if (!profileError && profile?.profile_completed === true) {
           console.log("Database shows profile is completed, updating state...");
           progress.profile = true;
+        }
+
+        // Set approval status
+        if (!profileError && profile) {
+          setIsApproved(profile.is_active || false);
+          setCheckingApproval(false);
         }
 
         // Check health survey completion
@@ -1163,6 +1675,7 @@ function DashboardContent() {
       }
     } catch (error) {
       console.error("Error checking database during loadProgress:", error);
+      setCheckingApproval(false);
     }
   }, [supabase]);
 
@@ -1243,8 +1756,128 @@ function DashboardContent() {
   const progressPercentage = (completedCount / totalCount) * 100;
   const allStepsCompleted = checklist.every((item) => item.completed);
 
-  // If meeting is scheduled, show waiting state
-  if (meetingScheduled) {
+  // If approved by coach, show weekly calendar
+  if (isApproved && allStepsCompleted && !checkingApproval) {
+    return <RunnerWeeklyCalendar />;
+  }
+
+  // If meeting is scheduled but not approved, show waiting for approval state
+  if (meetingScheduled && !isApproved && !checkingApproval) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-4xl mx-auto">
+          {/* Waiting for Approval State */}
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-12 text-white mb-8">
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-10 h-10 text-white animate-pulse"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h1 className="text-3xl font-bold mb-4">
+                🎉 Great! Meeting Scheduled!
+              </h1>
+              <p className="text-xl text-blue-100 mb-6">
+                You&apos;ve completed all setup steps and scheduled your
+                coaching session.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-8 mb-8">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-yellow-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Waiting for Coach Approval
+              </h2>
+              <p className="text-lg text-gray-600 mb-6">
+                Luc is reviewing your profile and health information. After your
+                coaching call, he will activate your account and you&apos;ll get
+                access to your personalized calendar with workout sessions.
+              </p>
+
+              <div className="mt-8">
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    What&apos;s Next?
+                  </h3>
+                  <ul className="text-sm text-gray-600 space-y-2">
+                    <li className="flex items-start">
+                      <span className="text-green-500 mr-2">✓</span>
+                      Your coach is reviewing your information
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">○</span>
+                      Attend your scheduled coaching call
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">○</span>
+                      Coach will activate your account
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">○</span>
+                      Access your personalized training calendar
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Your calendar and personalized workouts
+                  will appear here automatically once your coach approves your
+                  account. This usually happens during or shortly after your
+                  coaching call.
+                </p>
+              </div>
+            </div>
+
+            {/* Reset option for testing */}
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setMeetingScheduled(false);
+                  localStorage.removeItem("meeting-scheduled");
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                Reset meeting status (for testing)
+              </button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // If meeting is scheduled AND approved, show approved state
+  if (meetingScheduled && isApproved) {
     return (
       <DashboardLayout>
         <div className="max-w-4xl mx-auto">
@@ -1269,11 +1902,11 @@ function DashboardContent() {
                 </div>
               </div>
               <h1 className="text-3xl font-bold mb-4">
-                🎉 Setup Complete & Meeting Scheduled!
+                🎉 Welcome! You&apos;re All Set!
               </h1>
               <p className="text-xl text-blue-100 mb-6">
-                Fantastic! You&apos;ve completed all setup steps and scheduled
-                your coaching session.
+                Your account has been approved! You now have full access to your
+                personalized training calendar and all features.
               </p>
             </div>
 
@@ -1296,12 +1929,12 @@ function DashboardContent() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Waiting for Your Coach
+                Your Training Starts Now!
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Luc will review your profile and health information before your
-                scheduled call. After your coaching session, personalized
-                workout sessions will be added to your calendar.
+                Your coach has activated your account! You can now view and
+                manage your personalized training calendar with all your
+                scheduled workout sessions.
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -1312,28 +1945,34 @@ function DashboardContent() {
                   <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start">
                       <span className="text-green-500 mr-2">✓</span>
-                      Your coach will review your information
+                      Coach reviewed your information
                     </li>
                     <li className="flex items-start">
                       <span className="text-green-500 mr-2">✓</span>
-                      Attend your scheduled coaching call
+                      Account activated and approved
                     </li>
                     <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">○</span>
-                      Receive personalized training plan
+                      <span className="text-green-500 mr-2">✓</span>
+                      Access to personalized training calendar
                     </li>
                     <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">○</span>
+                      <span className="text-blue-500 mr-2">→</span>
                       Start your customized workouts
                     </li>
                   </ul>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-6">
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6 border-2 border-blue-200">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    In the Meantime
+                    Get Started
                   </h3>
                   <div className="space-y-3">
+                    <Link
+                      href="/dashboard/calendar"
+                      className="block bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 font-semibold transition-colors"
+                    >
+                      📅 View Your Training Calendar
+                    </Link>
                     <Link
                       href="/dashboard/videos"
                       className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -1345,12 +1984,6 @@ function DashboardContent() {
                       className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
                       → Review your profile
-                    </Link>
-                    <Link
-                      href="/dashboard/calendar"
-                      className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      → Check your calendar
                     </Link>
                   </div>
                 </div>
@@ -1465,7 +2098,7 @@ function DashboardContent() {
           </p>
         </div>
 
-        {/* Schedule Meeting Section - Show when all 3 steps are complete */}
+        {/* Contact Coach Section - Show when all 3 steps are complete */}
         {allStepsCompleted && (
           <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-8 mb-6 text-white">
             <div className="flex items-center justify-between">
@@ -1474,9 +2107,9 @@ function DashboardContent() {
                   🎉 Ready for Your Coaching Session!
                 </h2>
                 <p className="text-blue-100 mb-4">
-                  Perfect! You&apos;ve completed all 3 setup steps. Now schedule
-                  a personalized call with Luc, your running coach, to get
-                  expert guidance tailored to your goals.
+                  Perfect! You&apos;ve completed all 3 setup steps. Now contact
+                  Luc via WhatsApp to schedule your personalized coaching call
+                  and get expert guidance tailored to your goals.
                 </p>
                 <div className="flex items-center text-blue-100 text-sm mb-4">
                   <svg
@@ -1509,46 +2142,70 @@ function DashboardContent() {
                   </svg>
                   <span>Video call via Zoom</span>
                 </div>
+
+                {/* WhatsApp Contact */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-3">
+                    <svg
+                      className="w-8 h-8 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm text-blue-100">
+                        Contact Coach Luc on WhatsApp:
+                      </p>
+                      <p className="text-xl font-bold">+33 6 12 34 56 78</p>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="ml-8 flex flex-col space-y-3">
-                <PopupButton
-                  url="https://calendly.com/luc-run-coach"
-                  rootElement={
-                    (typeof document !== "undefined"
-                      ? document.getElementById("__next") || document.body
-                      : undefined) as HTMLElement
-                  }
-                  text="Schedule Your Meeting"
-                  className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg text-lg hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-                />
+                <a
+                  href="https://wa.me/33612345678?text=Hi%20Luc!%20I've%20completed%20my%20profile%20setup%20and%20I'm%20ready%20to%20schedule%20my%20coaching%20session."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg text-lg hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  <span>Contact on WhatsApp</span>
+                </a>
                 <button
                   onClick={() => setShowMeetingConfirmation(true)}
                   className="bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-800 transition-colors"
                 >
-                  I&apos;ve Already Scheduled
+                  I&apos;ve Contacted the Coach
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Meeting Confirmation Modal */}
+        {/* Coach Contact Confirmation Modal */}
         {showMeetingConfirmation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md mx-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Confirm Meeting Scheduled
+                Confirm Coach Contact
               </h3>
               <p className="text-gray-600 mb-6">
-                Have you successfully scheduled your coaching session with Luc
-                through Calendly?
+                Have you successfully contacted Luc via WhatsApp to schedule
+                your coaching session?
               </p>
               <div className="flex space-x-3">
                 <button
                   onClick={handleMeetingScheduled}
                   className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Yes, I&apos;ve Scheduled
+                  Yes, I&apos;ve Contacted
                 </button>
                 <button
                   onClick={() => setShowMeetingConfirmation(false)}

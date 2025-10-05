@@ -14,6 +14,9 @@ export default function Programs() {
   const [enrolling, setEnrolling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasActiveEnrollment, setHasActiveEnrollment] = useState(false);
+  const [enrolledProgramType, setEnrolledProgramType] = useState<string | null>(
+    null
+  );
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userEnrollments, setUserEnrollments] = useState<string[]>([]);
 
@@ -249,6 +252,13 @@ export default function Programs() {
         if (enrollments && enrollments.length > 0) {
           setHasActiveEnrollment(true);
           setUserEnrollments(enrollments.map((e) => e.program_id));
+          // Get the program type from the first active enrollment
+          const programData = enrollments[0].training_programs as {
+            program_type: string;
+          } | null;
+          if (programData) {
+            setEnrolledProgramType(programData.program_type);
+          }
         }
       } catch (err) {
         console.error("Error loading enrollments:", err);
@@ -344,17 +354,20 @@ export default function Programs() {
       }
 
       // Use RPC function to handle enrollment with proper database setup
-      const { data, error: rpcError } = await supabase.rpc('enroll_user_in_program', {
-        p_user_id: user.id,
-        p_program_type: programId
-      });
+      const { data, error: rpcError } = await supabase.rpc(
+        "enroll_user_in_program",
+        {
+          p_user_id: user.id,
+          p_program_type: programId,
+        }
+      );
 
       if (rpcError) {
         console.error("Error enrolling via RPC:", rpcError);
-        
+
         // Fallback to direct insertion approach
         console.log("Attempting fallback enrollment method...");
-        
+
         // Get the program ID
         const { data: program, error: programError } = await supabase
           .from("training_programs")
@@ -436,32 +449,80 @@ export default function Programs() {
           </div>
         )}
 
-        {hasActiveEnrollment && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
+        {hasActiveEnrollment && enrolledProgramType && (
+          <div className="mb-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl shadow-sm">
+            <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-green-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  Program Enrollment Complete
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-semibold text-green-800 mb-1">
+                  Your Current Program
                 </h3>
-                <p className="text-sm text-green-700 mt-1">
-                  You are currently enrolled in a training program. You can view
-                  your progress in the calendar section.
+                <p className="text-xl font-bold text-gray-900 mb-2">
+                  {programs.find((p) => p.id === enrolledProgramType)?.title ||
+                    "Training Program"}
                 </p>
+                <p className="text-sm text-gray-600 mb-3">
+                  {
+                    programs.find((p) => p.id === enrolledProgramType)
+                      ?.description
+                  }
+                </p>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span className="flex items-center">
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {
+                      programs.find((p) => p.id === enrolledProgramType)
+                        ?.duration
+                    }
+                  </span>
+                  <span className="flex items-center">
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    {
+                      programs.find((p) => p.id === enrolledProgramType)
+                        ?.frequency
+                    }
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -473,17 +534,30 @@ export default function Programs() {
             return (
               <div
                 key={program.id}
-                className={`${colors.bg} ${colors.border} border rounded-xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-lg`}
+                className={`${colors.bg} ${
+                  colors.border
+                } border rounded-xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
+                  enrolledProgramType === program.id
+                    ? "ring-2 ring-green-500 ring-offset-2"
+                    : ""
+                }`}
               >
                 {/* Header */}
                 <div className="flex items-center mb-4">
                   <div className={`${colors.accent} p-3 rounded-lg mr-4`}>
                     <div className={colors.icon}>{program.icon}</div>
                   </div>
-                  <div>
-                    <h3 className={`text-xl font-bold ${colors.text}`}>
-                      {program.title}
-                    </h3>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className={`text-xl font-bold ${colors.text}`}>
+                        {program.title}
+                      </h3>
+                      {enrolledProgramType === program.id && (
+                        <span className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                          Active
+                        </span>
+                      )}
+                    </div>
                     <p className="text-gray-600 text-sm">{program.subtitle}</p>
                   </div>
                 </div>
