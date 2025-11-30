@@ -1,20 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { authService } from "@/utils/auth";
+import { createClient } from "@/utils/supabase/client";
 
-export default function Signup() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
+export default function ResetPassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [validating, setValidating] = useState(true);
   const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    // Check if user has valid session from password reset link
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error || !session) {
+        setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
+        setValidating(false);
+        return;
+      }
+      
+      setValidating(false);
+    };
+
+    checkSession();
+  }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,17 +52,44 @@ export default function Signup() {
     }
 
     try {
-      await authService.signUp({ firstName, lastName, email, password });
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
       setSuccess(true);
+      
+      // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push("/login");
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la réinitialisation du mot de passe"
+      );
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (validating) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+        <main className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -70,10 +113,10 @@ export default function Signup() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Compte créé !
+                Mot de passe réinitialisé !
               </h1>
               <p className="text-gray-600 mb-4">
-                Veuillez vérifier votre e-mail pour activer votre compte.
+                Votre mot de passe a été réinitialisé avec succès.
               </p>
               <p className="text-sm text-gray-500">
                 Vous serez redirigé vers la page de connexion dans un instant...
@@ -91,87 +134,34 @@ export default function Signup() {
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Créer un compte
+              Réinitialiser le mot de passe
             </h1>
             <p className="text-gray-600">
-              Rejoignez LucRun et commencez votre aventure running
+              Entrez votre nouveau mot de passe ci-dessous
             </p>
           </div>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{error}</p>
+              {error.includes("invalide") && (
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-blue-600 hover:text-blue-800 font-semibold mt-2 inline-block"
+                >
+                  Demander un nouveau lien
+                </Link>
+              )}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="firstName"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Prénom
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                  placeholder="Prénom"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="lastName"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Nom
-                </label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                  placeholder="Nom"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Adresse e-mail
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                placeholder="votre.email@exemple.com"
-              />
-            </div>
-
             <div>
               <label
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Mot de passe
+                Nouveau mot de passe
               </label>
               <input
                 type="password"
@@ -182,7 +172,7 @@ export default function Signup() {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                placeholder="Créez un mot de passe"
+                placeholder="Entrez votre nouveau mot de passe"
               />
               <p className="mt-1 text-sm text-gray-500">
                 Doit contenir au moins 6 caractères
@@ -205,7 +195,7 @@ export default function Signup() {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                placeholder="Confirmez votre mot de passe"
+                placeholder="Confirmez votre nouveau mot de passe"
               />
             </div>
 
@@ -214,23 +204,21 @@ export default function Signup() {
               disabled={isLoading}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Création du compte..." : "Créer un compte"}
+              {isLoading ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
             </button>
           </form>
 
           <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              Vous avez déjà un compte ?{" "}
-              <Link
-                href="/login"
-                className="text-blue-600 hover:text-blue-800 font-semibold"
-              >
-                Connectez-vous ici
-              </Link>
-            </p>
+            <Link
+              href="/login"
+              className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
+            >
+              ← Retour à la connexion
+            </Link>
           </div>
         </div>
       </main>
     </div>
   );
 }
+

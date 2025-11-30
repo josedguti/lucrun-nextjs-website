@@ -30,6 +30,7 @@ function ProfileContent() {
     garminAccount: "",
     trainingDays: [] as string[],
     equipment: [] as string[],
+    equipmentOther: "",
     hasInjury: "",
     injuryDetails: "",
     hasPastInjury: "",
@@ -74,6 +75,8 @@ function ProfileContent() {
     "Swiss ball",
     "TRX Suspension",
     "Corde à sauter",
+    "Banc de musculation",
+    "Autre",
   ];
 
   const smartwatchTypes = [
@@ -93,6 +96,20 @@ function ProfileContent() {
     "Avancé (Expérimenté avec objectifs de course)",
     "Elite/Compétitif (Athlète de haut niveau)",
   ];
+
+  // Format date from YYYY-MM-DD to DD-MM-YYYY for display
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return "";
+    const [year, month, day] = dateString.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
+  // Format date from DD-MM-YYYY to YYYY-MM-DD for storage
+  const formatDateForStorage = (dateString: string): string => {
+    if (!dateString) return "";
+    const [day, month, year] = dateString.split("-");
+    return `${year}-${month}-${day}`;
+  };
 
   // Load profile data from Supabase on component mount
   useEffect(() => {
@@ -143,7 +160,9 @@ function ProfileContent() {
             lastName: profile.last_name || "",
             email: profile.email || "",
             phone: profile.phone || "",
-            dateOfBirth: profile.date_of_birth || "",
+            dateOfBirth: profile.date_of_birth
+              ? formatDateForDisplay(profile.date_of_birth)
+              : "",
             street: profile.street || "",
             city: profile.city || "",
             state: profile.state || "",
@@ -153,6 +172,7 @@ function ProfileContent() {
             garminAccount: profile.garmin_account || "",
             trainingDays: profile.training_days || [],
             equipment: profile.equipment || [],
+            equipmentOther: profile.equipment_other || "",
             hasInjury:
               profile.has_injury === true
                 ? "yes"
@@ -205,6 +225,27 @@ function ProfileContent() {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  // Handle date input change with DD-MM-YYYY format
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^\d-]/g, ""); // Only allow digits and hyphens
+
+    // Auto-add hyphens
+    if (value.length >= 2 && value.charAt(2) !== "-") {
+      value = value.slice(0, 2) + "-" + value.slice(2);
+    }
+    if (value.length >= 5 && value.charAt(5) !== "-") {
+      value = value.slice(0, 5) + "-" + value.slice(5);
+    }
+
+    // Limit length to DD-MM-YYYY format (10 characters)
+    value = value.slice(0, 10);
+
+    setFormData((prev) => ({
+      ...prev,
+      dateOfBirth: value,
     }));
   };
 
@@ -291,7 +332,9 @@ function ProfileContent() {
         last_name: formData.lastName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim() || null,
-        date_of_birth: formData.dateOfBirth || null,
+        date_of_birth: formData.dateOfBirth
+          ? formatDateForStorage(formData.dateOfBirth)
+          : null,
         street: formData.street.trim() || null,
         city: formData.city.trim() || null,
         state: formData.state.trim() || null,
@@ -301,6 +344,7 @@ function ProfileContent() {
         garmin_account: formData.garminAccount.trim() || null,
         training_days: formData.trainingDays,
         equipment: formData.equipment,
+        equipment_other: formData.equipmentOther.trim() || null,
         has_injury: formData.hasInjury === "yes",
         injury_details: formData.injuryDetails.trim() || null,
         has_past_injury: formData.hasPastInjury === "yes",
@@ -421,6 +465,7 @@ function ProfileContent() {
       garminAccount: "",
       trainingDays: [],
       equipment: [],
+      equipmentOther: "",
       hasInjury: "",
       injuryDetails: "",
       hasPastInjury: "",
@@ -593,17 +638,22 @@ function ProfileContent() {
                   Date de naissance <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="date"
+                  type="text"
                   id="dateOfBirth"
                   name="dateOfBirth"
                   required
+                  placeholder="JJ-MM-AAAA"
                   value={formData.dateOfBirth}
-                  onChange={handleInputChange}
+                  onChange={handleDateChange}
                   readOnly={isReadOnly}
+                  pattern="\d{2}-\d{2}-\d{4}"
                   className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
                     isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                   }`}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Format: JJ-MM-AAAA (ex: 25-03-1992)
+                </p>
               </div>
             </div>
           </div>
@@ -1014,6 +1064,30 @@ function ProfileContent() {
                   </label>
                 ))}
               </div>
+
+              {/* Show text input if "Autre" is selected */}
+              {formData.equipment.includes("Autre") && (
+                <div className="mt-4">
+                  <label
+                    htmlFor="equipmentOther"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Précise ton équipement
+                  </label>
+                  <input
+                    type="text"
+                    id="equipmentOther"
+                    name="equipmentOther"
+                    value={formData.equipmentOther}
+                    onChange={handleInputChange}
+                    readOnly={isReadOnly}
+                    placeholder="Décris ton équipement..."
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                      isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                    }`}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -1235,7 +1309,7 @@ function ProfileContent() {
                       htmlFor="bodyFatPercentage"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Pourcentage de graisse corporelle (%)
+                      Rapport de composition corporelle
                     </label>
                     <input
                       type="number"
@@ -1253,7 +1327,7 @@ function ProfileContent() {
                       placeholder="ex : 15.5"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Pourcentage de graisse corporelle estimé
+                      mesure faite par le coach
                     </p>
                   </div>
                 </div>

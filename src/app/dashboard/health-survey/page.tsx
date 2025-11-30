@@ -572,7 +572,7 @@ function HealthSurveyContent() {
               Document requis
             </h3>
             <p className="text-amber-700 mb-4">
-              Veuillez télécharger un certificat médical ou une licence sportive attestant
+              Veuillez télécharger un certificat médical, une licence sportive ou un PPS attestant
               que vous pouvez pratiquer une activité physique.
             </p>
             <div className="space-y-4">
@@ -593,6 +593,7 @@ function HealthSurveyContent() {
                 >
                   <option value="medical">Certificat médical</option>
                   <option value="sports">Licence sportive</option>
+                  <option value="pps">PPS (Parcours de Prévention Santé)</option>
                 </select>
               </div>
 
@@ -601,6 +602,8 @@ function HealthSurveyContent() {
                   Téléchargez votre{" "}
                   {formData.documentType === "medical"
                     ? "certificat médical"
+                    : formData.documentType === "pps"
+                    ? "PPS (Parcours de Prévention Santé)"
                     : "licence sportive"}
                 </label>
                 <div className="flex items-center">
@@ -644,7 +647,7 @@ function HealthSurveyContent() {
                           d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      Voir le certificat médical
+                      Voir le document
                     </a>
                   </div>
                 )}
@@ -653,7 +656,7 @@ function HealthSurveyContent() {
                 {isReadOnly && !medicalCertificateUrl && (
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-700">
-                      Aucun certificat médical n&apos;a encore été téléchargé par cet utilisateur.
+                      Aucun document n&apos;a encore été téléchargé par cet utilisateur.
                     </p>
                   </div>
                 )}
@@ -685,7 +688,7 @@ function HealthSurveyContent() {
                   Avis important
                 </h3>
                 <p className="mt-1 text-sm text-yellow-700">
-                  Un certificat médical ou une licence sportive valide est requis
+                  Un certificat médical, une licence sportive ou un PPS valide est requis
                   avant de pouvoir commencer tout programme d&apos;entraînement. Cela garantit votre
                   sécurité et nous aide à créer un plan d&apos;entraînement approprié pour
                   vous.

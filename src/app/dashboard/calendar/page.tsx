@@ -98,6 +98,41 @@ function CalendarContent() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const todayString = today.toISOString().split("T")[0];
 
+  // Format date from YYYY-MM-DD to DD-MM-YYYY for display
+  const formatDateForDisplay = (dateString: string): string => {
+    if (!dateString) return "";
+    const [year, month, day] = dateString.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
+  // Format date from DD-MM-YYYY to YYYY-MM-DD for storage
+  const formatDateForStorage = (dateString: string): string => {
+    if (!dateString) return "";
+    const [day, month, year] = dateString.split("-");
+    return `${year}-${month}-${day}`;
+  };
+
+  // Handle date input change with DD-MM-YYYY format
+  const handleDateChange = (
+    value: string,
+    setter: (value: string) => void
+  ) => {
+    let formattedValue = value.replace(/[^\d-]/g, ""); // Only allow digits and hyphens
+
+    // Auto-add hyphens
+    if (formattedValue.length >= 2 && formattedValue.charAt(2) !== "-") {
+      formattedValue = formattedValue.slice(0, 2) + "-" + formattedValue.slice(2);
+    }
+    if (formattedValue.length >= 5 && formattedValue.charAt(5) !== "-") {
+      formattedValue = formattedValue.slice(0, 5) + "-" + formattedValue.slice(5);
+    }
+
+    // Limit length to DD-MM-YYYY format (10 characters)
+    formattedValue = formattedValue.slice(0, 10);
+
+    setter(formattedValue);
+  };
+
   // Load user and training sessions from database
   useEffect(() => {
     async function loadUserAndSessions() {
@@ -246,7 +281,7 @@ function CalendarContent() {
       user_id: userId,
       title: session.title,
       session_type: session.type,
-      session_date: session.date,
+      session_date: formatDateForStorage(session.date),
       session_time: session.time || null,
       duration_minutes: session.duration
         ? parseInt(session.duration.replace(" min", ""))
@@ -462,6 +497,12 @@ function CalendarContent() {
     return date.toDateString() === today.toDateString();
   };
 
+  const isPastDate = (date: Date) => {
+    const dateWithoutTime = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayWithoutTime = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return dateWithoutTime < todayWithoutTime;
+  };
+
   const isSameMonth = (date: Date) => {
     return (
       date.getMonth() === currentDate.getMonth() &&
@@ -544,7 +585,7 @@ function CalendarContent() {
     setCreateModalDate(date);
     setNewSession({
       title: "",
-      date: date.toISOString().split("T")[0],
+      date: formatDateForDisplay(date.toISOString().split("T")[0]),
       description: "",
       isCompleted: false,
       hasConstraints: false,
@@ -683,7 +724,7 @@ function CalendarContent() {
     setSelectedSession(session);
     setEditSession({
       title: session.title,
-      date: session.date,
+      date: formatDateForDisplay(session.date),
       description: session.description || "",
       isCompleted: session.isCompleted || false,
       hasConstraints: session.hasConstraints || false,
@@ -840,7 +881,7 @@ function CalendarContent() {
     if (selectedSession) {
       setCopySession({
         targetRunnerId: "",
-        targetDate: new Date().toISOString().split("T")[0], // Default to today
+        targetDate: formatDateForDisplay(new Date().toISOString().split("T")[0]), // Default to today
       });
       setShowCopySession(true);
     }
@@ -1237,6 +1278,7 @@ function CalendarContent() {
                   const sessions = getSessionsForDate(date);
                   const isCurrentMonth = isSameMonth(date);
                   const isTodayDate = isToday(date);
+                  const isPast = isPastDate(date);
 
                   return (
                     <div
@@ -1244,6 +1286,8 @@ function CalendarContent() {
                       className={`h-24 border rounded-lg p-1 cursor-pointer transition-colors relative group ${
                         isTodayDate
                           ? "bg-blue-50 border-blue-300"
+                          : isPast
+                          ? "bg-gray-50 border-gray-200 hover:bg-gray-100"
                           : "bg-white border-gray-200 hover:bg-gray-50"
                       } ${!isCurrentMonth ? "opacity-50" : ""}`}
                       onDragOver={handleDragOver}
@@ -1253,7 +1297,7 @@ function CalendarContent() {
                       <div className="flex justify-between items-start mb-1">
                         <div
                           className={`text-sm font-medium ${
-                            isTodayDate ? "text-blue-600" : "text-gray-900"
+                            isTodayDate ? "text-blue-600" : isPast ? "text-gray-400" : "text-gray-900"
                           }`}
                         >
                           {date.getDate()}
@@ -1337,6 +1381,7 @@ function CalendarContent() {
                 {getWeekDates(currentWeekStart).map((date, index) => {
                   const sessions = getSessionsForDate(date);
                   const isTodayDate = isToday(date);
+                  const isPast = isPastDate(date);
 
                   return (
                     <div
@@ -1344,6 +1389,8 @@ function CalendarContent() {
                       className={`h-32 border rounded-lg p-2 cursor-pointer transition-colors relative group ${
                         isTodayDate
                           ? "bg-blue-50 border-blue-300"
+                          : isPast
+                          ? "bg-gray-50 border-gray-200 hover:bg-gray-100"
                           : "bg-white border-gray-200 hover:bg-gray-50"
                       }`}
                       onDragOver={handleDragOver}
@@ -1353,7 +1400,7 @@ function CalendarContent() {
                       <div className="flex justify-between items-start mb-2">
                         <div
                           className={`text-lg font-semibold ${
-                            isTodayDate ? "text-blue-600" : "text-gray-900"
+                            isTodayDate ? "text-blue-600" : isPast ? "text-gray-400" : "text-gray-900"
                           }`}
                         >
                           {date.getDate()}
@@ -1574,11 +1621,15 @@ function CalendarContent() {
                       Date
                     </label>
                     <input
-                      type="date"
+                      type="text"
                       value={newSession.date}
                       onChange={(e) =>
-                        setNewSession({ ...newSession, date: e.target.value })
+                        handleDateChange(e.target.value, (value) =>
+                          setNewSession({ ...newSession, date: value })
+                        )
                       }
+                      placeholder="JJ-MM-AAAA"
+                      pattern="\d{2}-\d{2}-\d{4}"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       required
                     />
@@ -1895,11 +1946,15 @@ function CalendarContent() {
                       Date
                     </label>
                     <input
-                      type="date"
+                      type="text"
                       value={editSession.date}
                       onChange={(e) =>
-                        setEditSession({ ...editSession, date: e.target.value })
+                        handleDateChange(e.target.value, (value) =>
+                          setEditSession({ ...editSession, date: value })
+                        )
                       }
+                      placeholder="JJ-MM-AAAA"
+                      pattern="\d{2}-\d{2}-\d{4}"
                       disabled={
                         currentUser?.email !== "luc.run.coach@gmail.com"
                       }
@@ -2199,7 +2254,13 @@ function CalendarContent() {
                       {saving && (
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                       )}
-                      <span>{saving ? "Mise à jour..." : "Modifier"}</span>
+                      <span>
+                        {saving 
+                          ? "Mise à jour..." 
+                          : (!selectedSession?.comments || selectedSession.comments.trim() === "") 
+                            ? "Valider" 
+                            : "Modifier"}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -2359,14 +2420,18 @@ function CalendarContent() {
                     Date de la séance *
                   </label>
                   <input
-                    type="date"
+                    type="text"
                     value={copySession.targetDate}
                     onChange={(e) =>
-                      setCopySession({
-                        ...copySession,
-                        targetDate: e.target.value,
-                      })
+                      handleDateChange(e.target.value, (value) =>
+                        setCopySession({
+                          ...copySession,
+                          targetDate: value,
+                        })
+                      )
                     }
+                    placeholder="JJ-MM-AAAA"
+                    pattern="\d{2}-\d{2}-\d{4}"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     required
                   />

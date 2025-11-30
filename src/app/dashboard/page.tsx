@@ -226,7 +226,7 @@ function RunnerWeeklyCalendar() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {weekOffset === 0
                   ? "Entraînement de cette semaine"
-                  : "Programme d&apos;entraînement"}
+                  : "Programme d'entraînement"}
               </h1>
               <p className="text-lg text-gray-600">{getWeekRangeText()}</p>
             </div>
@@ -2158,14 +2158,14 @@ function DashboardContent() {
                       <p className="text-sm text-blue-100">
                         Contacte Coach Luc sur WhatsApp :
                       </p>
-                      <p className="text-xl font-bold">+33 6 12 34 56 78</p>
+                      <p className="text-xl font-bold">+33 6 40 20 38 13</p>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="ml-8 flex flex-col space-y-3">
                 <a
-                  href="https://wa.me/33612345678?text=Hi%20Luc!%20I've%20completed%20my%20profile%20setup%20and%20I'm%20ready%20to%20schedule%20my%20coaching%20session."
+                  href="https://wa.me/33640203813?text=Hi%20Luc!%20I've%20completed%20my%20profile%20setup%20and%20I'm%20ready%20to%20schedule%20my%20coaching%20session."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg text-lg hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
