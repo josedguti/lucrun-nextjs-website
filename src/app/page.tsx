@@ -7,12 +7,36 @@ import { useState } from "react";
 export default function Home() {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [submitStatus, setSubmitStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would handle the form submission
-    setSubmitStatus("Merci pour votre envoi !");
-    setFormData({ name: "", email: "", message: "" });
+    setIsSubmitting(true);
+    setSubmitStatus("");
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus("Merci pour votre envoi !");
+        setFormData({ name: "", email: "", message: "" });
+      } else {
+        setSubmitStatus(`Erreur: ${data.error || "Une erreur est survenue"}`);
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      setSubmitStatus("Erreur lors de l'envoi. Veuillez réessayer.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -233,7 +257,7 @@ export default function Home() {
                   placeholder="Nom"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -243,7 +267,7 @@ export default function Home() {
                   placeholder="E-mail"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -253,18 +277,23 @@ export default function Home() {
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   rows={5}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-700 transition-all"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-md font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Envoyer
+                {isSubmitting ? "Envoi en cours..." : "Envoyer"}
               </button>
               {submitStatus && (
-                <p className="text-green-600 text-center font-semibold">{submitStatus}</p>
+                <p className={`text-center font-semibold ${
+                  submitStatus.startsWith("Erreur") ? "text-red-600" : "text-green-600"
+                }`}>
+                  {submitStatus}
+                </p>
               )}
             </form>
           </div>

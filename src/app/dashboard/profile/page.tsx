@@ -133,7 +133,9 @@ function ProfileContent() {
           const userName =
             profile.first_name && profile.last_name
               ? `${profile.first_name} ${profile.last_name}`
-              : profile.first_name || profile.email?.split("@")[0] || "Utilisateur";
+              : profile.first_name ||
+                profile.email?.split("@")[0] ||
+                "Utilisateur";
           setViewingUserName(userName);
 
           setFormData({
@@ -817,8 +819,8 @@ function ProfileContent() {
                   htmlFor="trainingHoursPerWeek"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Combien d&apos;heures par semaine peux-tu consacrer à l&apos;entraînement ?{" "}
-                  <span className="text-red-500">*</span>
+                  Combien d&apos;heures par semaine peux-tu consacrer à
+                  l&apos;entraînement ? <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="trainingHoursPerWeek"
@@ -888,7 +890,9 @@ function ProfileContent() {
                     isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <option value="">Sélectionnez les kilomètres hebdomadaires</option>
+                  <option value="">
+                    Sélectionnez les kilomètres hebdomadaires
+                  </option>
                   <option value="0-5">0-5 km</option>
                   <option value="6-15">6-15 km</option>
                   <option value="16-25">16-25 km</option>
@@ -918,7 +922,9 @@ function ProfileContent() {
                     isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <option value="">Sélectionnez la distance la plus longue</option>
+                  <option value="">
+                    Sélectionnez la distance la plus longue
+                  </option>
                   <option value="Less than 5K">Moins de 5KM</option>
                   <option value="5K">5KM</option>
                   <option value="10K">10KM</option>
@@ -1208,7 +1214,8 @@ function ProfileContent() {
                     />
                     {currentBMI && (
                       <p className="text-xs text-gray-500 mt-1">
-                        {parseFloat(currentBMI) < 18.5 && "Insuffisance pondérale"}
+                        {parseFloat(currentBMI) < 18.5 &&
+                          "Insuffisance pondérale"}
                         {parseFloat(currentBMI) >= 18.5 &&
                           parseFloat(currentBMI) < 25 &&
                           "Poids normal"}
@@ -1316,7 +1323,9 @@ function ProfileContent() {
                       isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                     }`}
                   >
-                    <option value="">Sélectionnez votre montre connectée</option>
+                    <option value="">
+                      Sélectionnez votre montre connectée
+                    </option>
                     {smartwatchTypes.map((type) => (
                       <option key={type} value={type}>
                         {type}
@@ -1334,8 +1343,8 @@ function ProfileContent() {
               {!isFormValid() && (
                 <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-700">
-                    Merci de remplir tous les champs obligatoires marqués d&apos;un * pour enregistrer
-                    ton profil.
+                    Merci de remplir tous les champs obligatoires marqués
+                    d&apos;un * pour enregistrer ton profil.
                   </p>
                 </div>
               )}
@@ -1355,7 +1364,9 @@ function ProfileContent() {
                   {saving && (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   )}
-                  <span>{saving ? "Enregistrement..." : "Enregistrer le profil"}</span>
+                  <span>
+                    {saving ? "Enregistrement..." : "Enregistrer le profil"}
+                  </span>
                 </button>
               </div>
             </div>

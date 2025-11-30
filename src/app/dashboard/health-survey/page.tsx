@@ -357,7 +357,7 @@ function HealthSurveyContent() {
     {
       id: "familyCardiacDeath",
       question:
-        "Un membre de votre famille est-il décédé subitement d&apos;une cause cardiaque ou inexpliquée ?",
+        "Un membre de votre famille est-il décédé subitement d'une cause cardiaque ou inexpliquée ?",
       name: "familyCardiacDeath",
     },
     {
@@ -446,7 +446,7 @@ function HealthSurveyContent() {
           <p className="text-sm text-gray-500 mt-2">
             {isReadOnly 
               ? "Informations du questionnaire santé de cet utilisateur (lecture seule)."
-              : "Veuillez répondre honnêtement à toutes les questions pour nous aider à créer un programme d&apos;entraînement sûr et efficace pour vous."
+              : "Veuillez répondre honnêtement à toutes les questions pour nous aider à créer un programme d'entraînement sûr et efficace pour vous."
             }
           </p>
         </div>

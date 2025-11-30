@@ -54,6 +54,9 @@ interface RunnerDetail {
 export default function RunnersPage() {
   const [runners, setRunners] = useState<RunnerDetail[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [selectedRunner, setSelectedRunner] = useState<RunnerDetail | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -220,6 +223,49 @@ export default function RunnersPage() {
     }
   };
 
+  const handleDeleteRunner = (runner: RunnerDetail) => {
+    setSelectedRunner(runner);
+    setShowDeleteConfirmation(true);
+  };
+
+  const confirmDeleteRunner = async () => {
+    if (!selectedRunner) return;
+
+    try {
+      setDeleting(true);
+
+      const response = await fetch(
+        `/api/runners/delete?userId=${selectedRunner.profile.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Remove runner from local state
+        setRunners((prevRunners) =>
+          prevRunners.filter((r) => r.profile.id !== selectedRunner.profile.id)
+        );
+        setShowDeleteConfirmation(false);
+        setSelectedRunner(null);
+      } else {
+        alert(`Erreur: ${data.error || "Impossible de supprimer l'utilisateur"}`);
+      }
+    } catch (error) {
+      console.error("Error deleting runner:", error);
+      alert("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const cancelDeleteRunner = () => {
+    setShowDeleteConfirmation(false);
+    setSelectedRunner(null);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -291,10 +337,31 @@ export default function RunnersPage() {
             return (
               <div
                 key={runner.profile.id}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200"
+                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200 relative"
               >
+                {/* Delete Button - Top Right Corner */}
+                <button
+                  onClick={() => handleDeleteRunner(runner)}
+                  className="absolute top-4 right-4 text-red-600 hover:text-red-800 hover:bg-red-50 p-1.5 rounded-full transition-colors duration-200"
+                  title="Supprimer ce coureur"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+
                 {/* Runner Avatar and Name */}
-                <div className="flex items-center mb-4">
+                <div className="flex items-center mb-4 pr-8">
                   <div className="flex-shrink-0 h-12 w-12">
                     <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
                       <span className="text-lg font-semibold text-blue-600">
@@ -482,6 +549,75 @@ export default function RunnersPage() {
             <p className="mt-1 text-sm text-gray-500">
               Les coureurs apparaîtront ici au fur et à mesure de leur inscription.
             </p>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmation && selectedRunner && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                  <svg
+                    className="w-6 h-6 text-red-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Supprimer le coureur
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Êtes-vous sûr de vouloir supprimer{" "}
+                    <span className="font-semibold">
+                      {selectedRunner.profile.first_name &&
+                      selectedRunner.profile.last_name
+                        ? `${selectedRunner.profile.first_name} ${selectedRunner.profile.last_name}`
+                        : selectedRunner.profile.first_name ||
+                          selectedRunner.profile.email?.split("@")[0] ||
+                          "ce coureur"}
+                    </span>
+                    ?
+                    <br />
+                    <span className="text-sm text-gray-500">
+                      Cette action est irréversible et supprimera toutes les données associées (profil, séances, programmes, etc.).
+                    </span>
+                  </p>
+                </div>
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={cancelDeleteRunner}
+                    disabled={deleting}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDeleteRunner}
+                    disabled={deleting}
+                    className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {deleting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>{deleting ? "Suppression..." : "Supprimer"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

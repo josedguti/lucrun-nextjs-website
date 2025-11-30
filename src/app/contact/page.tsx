@@ -14,18 +14,43 @@ export default function Contact() {
     message: ""
   });
   const [submitStatus, setSubmitStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitStatus("Merci pour votre message !");
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      program: "",
-      message: ""
-    });
+    setIsSubmitting(true);
+    setSubmitStatus("");
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus("Merci pour votre message !");
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          program: "",
+          message: ""
+        });
+      } else {
+        setSubmitStatus(`Erreur: ${data.error || "Une erreur est survenue"}`);
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      setSubmitStatus("Erreur lors de l'envoi. Veuillez réessayer.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -71,7 +96,7 @@ export default function Contact() {
                   name="firstName"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -89,7 +114,7 @@ export default function Contact() {
                   name="lastName"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -107,7 +132,7 @@ export default function Contact() {
                   name="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -125,7 +150,7 @@ export default function Contact() {
                   name="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900"
                   required
                 />
               </div>
@@ -142,7 +167,7 @@ export default function Contact() {
                   name="program"
                   value={formData.program}
                   onChange={(e) => setFormData({ ...formData, program: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900"
                   required
                 >
                   <option value="">Sélectionnez un programme</option>
@@ -171,18 +196,23 @@ export default function Contact() {
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   rows={5}
                   placeholder="Ajouter un message..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-black text-white px-6 py-3 rounded-md font-semibold hover:bg-gray-800 transition-all"
+                disabled={isSubmitting}
+                className="w-full bg-black text-white px-6 py-3 rounded-md font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Envoyer
+                {isSubmitting ? "Envoi en cours..." : "Envoyer"}
               </button>
               {submitStatus && (
-                <p className="text-green-600 text-center font-semibold">{submitStatus}</p>
+                <p className={`text-center font-semibold ${
+                  submitStatus.startsWith("Erreur") ? "text-red-600" : "text-green-600"
+                }`}>
+                  {submitStatus}
+                </p>
               )}
             </form>
           </div>

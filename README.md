@@ -36,7 +36,23 @@ Create a `.env.local` file in the root directory:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+RESEND_API_KEY=your_resend_api_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
+
+**Note**: 
+- **Contact Form Emails**: To enable contact form email functionality:
+  1. Sign up for a free account at [Resend](https://resend.com)
+  2. Get your API key from the Resend dashboard
+  3. Add it to your `.env.local` file as `RESEND_API_KEY`
+  4. For production, verify your domain with Resend to send emails from your own domain
+
+- **Delete Runner Feature**: To enable the delete runner functionality in the admin dashboard:
+  1. Go to your Supabase project settings
+  2. Navigate to API settings
+  3. Copy the "service_role" key (keep this secret!)
+  4. Add it to your `.env.local` file as `SUPABASE_SERVICE_ROLE_KEY`
+  5. **Important**: Never expose this key in client-side code. It's only used in server-side API routes.
 
 ### Installation
 

@@ -825,7 +825,7 @@ function CalendarContent() {
       closeSessionModal();
     } catch (err) {
       console.error("Error deleting session:", err);
-        setError("Échec de la suppression de la séance");
+      setError("Échec de la suppression de la séance");
     } finally {
       setSaving(false);
     }
@@ -952,7 +952,7 @@ function CalendarContent() {
       console.log("Session copied successfully:", newLocalSession);
     } catch (err) {
       console.error("Error copying session:", err);
-        setError("Échec de la copie de la séance");
+      setError("Échec de la copie de la séance");
     } finally {
       setSaving(false);
     }
@@ -1055,7 +1055,9 @@ function CalendarContent() {
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-              <p className="text-blue-700">Enregistrement des modifications...</p>
+              <p className="text-blue-700">
+                Enregistrement des modifications...
+              </p>
             </div>
           </div>
         )}
