@@ -181,7 +181,7 @@ function CalendarContent() {
 
         if (sessionsError) {
           console.error("Error loading sessions:", sessionsError);
-          setError("Failed to load training sessions");
+          setError("Échec du chargement des séances d&apos;entraînement");
           return;
         }
 
@@ -220,7 +220,7 @@ function CalendarContent() {
         setTrainingSessions(formattedSessions);
       } catch (err) {
         console.error("Error loading data:", err);
-        setError("Failed to load calendar data");
+        setError("Échec du chargement des données du calendrier");
       } finally {
         setLoading(false);
       }
@@ -425,7 +425,7 @@ function CalendarContent() {
         setDraggedSession(null);
       } catch (err) {
         console.error("Error updating session:", err);
-        setError("Failed to update session");
+        setError("Échec de la mise à jour de la séance");
       } finally {
         setSaving(false);
       }
@@ -433,24 +433,24 @@ function CalendarContent() {
   };
 
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
+    "Mai",
+    "Juin",
+    "Juillet",
+    "Août",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre",
   ];
 
-  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("fr-FR", {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -515,10 +515,10 @@ function CalendarContent() {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
 
-    const startMonth = weekStart.toLocaleDateString("en-US", {
+    const startMonth = weekStart.toLocaleDateString("fr-FR", {
       month: "short",
     });
-    const endMonth = weekEnd.toLocaleDateString("en-US", { month: "short" });
+    const endMonth = weekEnd.toLocaleDateString("fr-FR", { month: "short" });
     const startDay = weekStart.getDate();
     const endDay = weekEnd.getDate();
     const year = weekStart.getFullYear();
@@ -825,7 +825,7 @@ function CalendarContent() {
       closeSessionModal();
     } catch (err) {
       console.error("Error deleting session:", err);
-      setError("Failed to delete session");
+        setError("Échec de la suppression de la séance");
     } finally {
       setSaving(false);
     }
@@ -863,13 +863,13 @@ function CalendarContent() {
       !copySession.targetRunnerId ||
       !copySession.targetDate
     ) {
-      setError("Please fill in all required fields for copying the session");
+      setError("Veuillez remplir tous les champs requis pour copier la séance");
       return;
     }
 
     const isAdmin = currentUser.email === "luc.run.coach@gmail.com";
     if (!isAdmin) {
-      setError("Only admin users can copy sessions");
+      setError("Seuls les administrateurs peuvent copier les séances");
       return;
     }
 
@@ -952,7 +952,7 @@ function CalendarContent() {
       console.log("Session copied successfully:", newLocalSession);
     } catch (err) {
       console.error("Error copying session:", err);
-      setError("Failed to copy session");
+        setError("Échec de la copie de la séance");
     } finally {
       setSaving(false);
     }
@@ -1026,7 +1026,7 @@ function CalendarContent() {
       <DashboardLayout>
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Training Calendar
+            Calendrier d&apos;entraînement
           </h1>
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -1046,7 +1046,7 @@ function CalendarContent() {
               onClick={() => setError(null)}
               className="mt-2 text-sm text-red-600 underline"
             >
-              Dismiss
+              Fermer
             </button>
           </div>
         )}
@@ -1055,7 +1055,7 @@ function CalendarContent() {
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-              <p className="text-blue-700">Saving changes...</p>
+              <p className="text-blue-700">Enregistrement des modifications...</p>
             </div>
           </div>
         )}
@@ -1064,10 +1064,10 @@ function CalendarContent() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Training Calendar
+              Calendrier d&apos;entraînement
               {currentUser?.email === "luc.run.coach@gmail.com" && (
                 <span className="ml-3 text-lg font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                  Admin View - All Users
+                  Vue admin - Tous les utilisateurs
                 </span>
               )}
             </h1>
@@ -1084,7 +1084,7 @@ function CalendarContent() {
                   onChange={(e) => setSelectedRunnerFilter(e.target.value)}
                   className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">All Runners</option>
+                  <option value="all">Tous les coureurs</option>
                   {runners.map((runner) => (
                     <option key={runner.id} value={runner.id}>
                       {runner.first_name && runner.last_name
@@ -1121,7 +1121,7 @@ function CalendarContent() {
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                Month
+                Mois
               </button>
               <button
                 onClick={() => setViewMode("week")}
@@ -1144,7 +1144,7 @@ function CalendarContent() {
                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                   />
                 </svg>
-                Week
+                Semaine
               </button>
             </div>
 
@@ -1153,7 +1153,7 @@ function CalendarContent() {
               onClick={goToToday}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
             >
-              Today
+              Aujourd&apos;hui
             </button>
           </div>
         </div>
@@ -1483,7 +1483,7 @@ function CalendarContent() {
                       // Show selected runner info when viewing specific runner's calendar
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Assigning to Runner
+                          Assigner au coureur
                         </label>
                         <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900">
                           {(() => {
@@ -1505,7 +1505,7 @@ function CalendarContent() {
                       // Show dropdown when viewing all runners
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Assign to Runner *
+                          Assigner au coureur *
                         </label>
                         <select
                           value={newSession.selectedRunnerId}
@@ -1518,10 +1518,10 @@ function CalendarContent() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                           required
                         >
-                          <option value="">Select a runner...</option>
+                          <option value="">Sélectionner un coureur...</option>
                           {runners.length === 0 ? (
                             <option value="" disabled>
-                              No runners found
+                              Aucun coureur trouvé
                             </option>
                           ) : (
                             runners.map((runner) => (
@@ -1607,7 +1607,7 @@ function CalendarContent() {
                           !showEmojiPickerDescription
                         )
                       }
-                      aria-label="Add emoji"
+                      aria-label="Ajouter un emoji"
                       className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
                     >
                       <span className="text-sm mr-1">😊</span>
@@ -1771,7 +1771,7 @@ function CalendarContent() {
                           setShowEmojiPickerComments(!showEmojiPickerComments)
                         }
                         className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
-                        aria-label="Add emoji"
+                        aria-label="Ajouter un emoji"
                       >
                         <span className="text-sm mr-1">😊</span>
                       </button>
@@ -1806,7 +1806,7 @@ function CalendarContent() {
                     {saving && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     )}
-                    <span>{saving ? "Creating..." : "Créer"}</span>
+                    <span>{saving ? "Création..." : "Créer"}</span>
                   </button>
                 </div>
               </form>
@@ -1942,7 +1942,7 @@ function CalendarContent() {
                           )
                         }
                         className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
-                        aria-label="Add emoji"
+                        aria-label="Ajouter un emoji"
                       >
                         <span className="text-sm mr-1">😊</span>
                       </button>
@@ -2119,7 +2119,7 @@ function CalendarContent() {
                           )
                         }
                         className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
-                        aria-label="Add emoji"
+                        aria-label="Ajouter un emoji"
                       >
                         <span className="text-sm mr-1">😊</span>
                       </button>
@@ -2147,7 +2147,7 @@ function CalendarContent() {
                         {saving && (
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
                         )}
-                        <span>{saving ? "Deleting..." : "Supprimer"}</span>
+                        <span>{saving ? "Suppression..." : "Supprimer"}</span>
                       </button>
                     )}
                     {currentUser?.email === "luc.run.coach@gmail.com" && (
@@ -2170,7 +2170,7 @@ function CalendarContent() {
                             d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                           />
                         </svg>
-                        <span>Copy Session</span>
+                        <span>Copier la séance</span>
                       </button>
                     )}
                   </div>
@@ -2197,7 +2197,7 @@ function CalendarContent() {
                       {saving && (
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                       )}
-                      <span>{saving ? "Updating..." : "Modifier"}</span>
+                      <span>{saving ? "Mise à jour..." : "Modifier"}</span>
                     </button>
                   </div>
                 </div>
@@ -2273,7 +2273,7 @@ function CalendarContent() {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Copy Session
+                  Copier la séance
                 </h2>
                 <button
                   onClick={closeCopySession}
@@ -2299,7 +2299,7 @@ function CalendarContent() {
                 {/* Original Session Info */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-900 mb-2">
-                    Copying Session:
+                    Copie de la séance :
                   </h3>
                   <div
                     className={`inline-block px-2 py-1 rounded text-xs ${getSessionColor(
@@ -2354,7 +2354,7 @@ function CalendarContent() {
                 {/* Target Date */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Session Date *
+                    Date de la séance *
                   </label>
                   <input
                     type="date"
@@ -2377,7 +2377,7 @@ function CalendarContent() {
                     onClick={closeCopySession}
                     className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                   >
-                    Cancel
+                    Annuler
                   </button>
                   <button
                     type="submit"
@@ -2391,7 +2391,7 @@ function CalendarContent() {
                     {saving && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     )}
-                    <span>{saving ? "Copying..." : "Copy Session"}</span>
+                    <span>{saving ? "Copie..." : "Copier la séance"}</span>
                   </button>
                 </div>
               </form>
@@ -2405,7 +2405,7 @@ function CalendarContent() {
 
 export default function Calendar() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Chargement...</div>}>
       <CalendarContent />
     </Suspense>
   );

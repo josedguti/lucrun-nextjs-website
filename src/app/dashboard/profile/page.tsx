@@ -50,30 +50,30 @@ function ProfileContent() {
   });
 
   const daysOfWeek = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+    "Dimanche",
   ];
 
   const equipmentOptions = [
-    "Treadmill",
-    "Elliptical",
-    "Stationary Bike",
-    "Rowing Machine",
-    "Free Weights",
-    "Resistance Bands",
+    "Tapis de course",
+    "Elliptique",
+    "Vélo d'appartement",
+    "Rameur",
+    "Poids libres",
+    "Bandes de résistance",
     "Kettlebells",
-    "Pull-up Bar",
-    "Yoga Mat",
-    "Foam Roller",
-    "Medicine Ball",
-    "Stability Ball",
-    "TRX Suspension Trainer",
-    "Jump Rope",
+    "Barre de traction",
+    "Tapis de yoga",
+    "Rouleau de massage",
+    "Médecine-ball",
+    "Swiss ball",
+    "TRX Suspension",
+    "Corde à sauter",
   ];
 
   const smartwatchTypes = [
@@ -83,15 +83,15 @@ function ProfileContent() {
     "Samsung Galaxy Watch",
     "Polar",
     "Suunto",
-    "Other",
+    "Autre",
   ];
 
   const runningLevels = [
-    "Beginner (Just starting out)",
-    "Recreational (Running for fun/fitness)",
-    "Intermediate (Regular runner with some experience)",
-    "Advanced (Experienced with race goals)",
-    "Elite/Competitive (High performance athlete)",
+    "Débutant (Commence tout juste)",
+    "Récréatif (Course pour le plaisir/fitness)",
+    "Intermédiaire (Coureur régulier avec expérience)",
+    "Avancé (Expérimenté avec objectifs de course)",
+    "Elite/Compétitif (Athlète de haut niveau)",
   ];
 
   // Load profile data from Supabase on component mount
@@ -133,7 +133,7 @@ function ProfileContent() {
           const userName =
             profile.first_name && profile.last_name
               ? `${profile.first_name} ${profile.last_name}`
-              : profile.first_name || profile.email?.split("@")[0] || "User";
+              : profile.first_name || profile.email?.split("@")[0] || "Utilisateur";
           setViewingUserName(userName);
 
           setFormData({
@@ -185,7 +185,7 @@ function ProfileContent() {
         }
       } catch (err) {
         console.error("Error loading profile:", err);
-        setError("Failed to load profile data");
+        setError("Échec du chargement des données du profil");
       } finally {
         setLoading(false);
       }
@@ -443,7 +443,7 @@ function ProfileContent() {
       <DashboardLayout>
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Profile Settings
+            Paramètres du profil
           </h1>
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -476,13 +476,13 @@ function ProfileContent() {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-              Back to Runners
+              Retour aux coureurs
             </button>
           </div>
         )}
 
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          {isReadOnly ? `${viewingUserName}'s Profile` : "Profile Settings"}
+          {isReadOnly ? `Profil de ${viewingUserName}` : "Paramètres du profil"}
         </h1>
 
         {error && (
@@ -495,7 +495,7 @@ function ProfileContent() {
           {/* Personal Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Personal Information
+              Informations personnelles
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -504,7 +504,7 @@ function ProfileContent() {
                   htmlFor="firstName"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  First Name <span className="text-red-500">*</span>
+                  Prénom <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -525,7 +525,7 @@ function ProfileContent() {
                   htmlFor="lastName"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Last Name <span className="text-red-500">*</span>
+                  Nom <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -546,7 +546,7 @@ function ProfileContent() {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Email Address <span className="text-red-500">*</span>
+                  Adresse e-mail <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -567,7 +567,7 @@ function ProfileContent() {
                   htmlFor="phone"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Phone Number <span className="text-red-500">*</span>
+                  Numéro de téléphone <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -588,7 +588,7 @@ function ProfileContent() {
                   htmlFor="dateOfBirth"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Date of Birth <span className="text-red-500">*</span>
+                  Date de naissance <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -609,7 +609,7 @@ function ProfileContent() {
           {/* Address Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Address <span className="text-red-500">*</span>
+              Adresse <span className="text-red-500">*</span>
             </h2>
 
             <div className="grid grid-cols-1 gap-6">
@@ -618,7 +618,7 @@ function ProfileContent() {
                   htmlFor="street"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Street Address <span className="text-red-500">*</span>
+                  Adresse <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -640,7 +640,7 @@ function ProfileContent() {
                     htmlFor="city"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    City <span className="text-red-500">*</span>
+                    Ville <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -661,7 +661,7 @@ function ProfileContent() {
                     htmlFor="state"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    State/Province <span className="text-red-500">*</span>
+                    Région/Province <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -682,7 +682,7 @@ function ProfileContent() {
                     htmlFor="zipCode"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    ZIP/Postal Code <span className="text-red-500">*</span>
+                    Code postal <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -703,7 +703,7 @@ function ProfileContent() {
                     htmlFor="country"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Country <span className="text-red-500">*</span>
+                    Pays <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -725,7 +725,7 @@ function ProfileContent() {
           {/* Connected Accounts */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Connected Accounts
+              Comptes connectés
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -734,13 +734,13 @@ function ProfileContent() {
                   htmlFor="stravaAccount"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Strava Account
+                  Compte Strava
                 </label>
                 <input
                   type="text"
                   id="stravaAccount"
                   name="stravaAccount"
-                  placeholder="Strava username or email"
+                  placeholder="Nom d'utilisateur ou e-mail Strava"
                   value={formData.stravaAccount}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
@@ -755,13 +755,13 @@ function ProfileContent() {
                   htmlFor="garminAccount"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Garmin Account
+                  Compte Garmin
                 </label>
                 <input
                   type="text"
                   id="garminAccount"
                   name="garminAccount"
-                  placeholder="Garmin username or email"
+                  placeholder="Nom d'utilisateur ou e-mail Garmin"
                   value={formData.garminAccount}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
@@ -776,12 +776,12 @@ function ProfileContent() {
           {/* Training Schedule */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Training Schedule
+              Horaire d&apos;entraînement
             </h2>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-4">
-                What days of the week can you train?{" "}
+                Quels jours de la semaine peux-tu t&apos;entraîner ?{" "}
                 <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -808,7 +808,7 @@ function ProfileContent() {
           {/* Running Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Running Information
+              Informations sur la course
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -817,7 +817,7 @@ function ProfileContent() {
                   htmlFor="trainingHoursPerWeek"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  How many hours a week can you dedicate to training?{" "}
+                  Combien d&apos;heures par semaine peux-tu consacrer à l&apos;entraînement ?{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -831,13 +831,13 @@ function ProfileContent() {
                     isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <option value="">Select hours per week</option>
-                  <option value="1-2">1-2 hours</option>
-                  <option value="3-4">3-4 hours</option>
-                  <option value="5-6">5-6 hours</option>
-                  <option value="7-8">7-8 hours</option>
-                  <option value="9-10">9-10 hours</option>
-                  <option value="11+">11+ hours</option>
+                  <option value="">Sélectionnez les heures par semaine</option>
+                  <option value="1-2">1-2 heures</option>
+                  <option value="3-4">3-4 heures</option>
+                  <option value="5-6">5-6 heures</option>
+                  <option value="7-8">7-8 heures</option>
+                  <option value="9-10">9-10 heures</option>
+                  <option value="11+">11+ heures</option>
                 </select>
               </div>
 
@@ -846,7 +846,7 @@ function ProfileContent() {
                   htmlFor="runningLevel"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  What is your running level?{" "}
+                  Quel est ton niveau de course ?{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -860,7 +860,7 @@ function ProfileContent() {
                     isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <option value="">Select your running level</option>
+                  <option value="">Sélectionnez votre niveau de course</option>
                   {runningLevels.map((level) => (
                     <option key={level} value={level}>
                       {level}
@@ -874,7 +874,7 @@ function ProfileContent() {
                   htmlFor="currentWeeklyKm"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  How many kilometers do you run per week currently?{" "}
+                  Combien de kilomètres cours-tu par semaine actuellement ?{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -888,7 +888,7 @@ function ProfileContent() {
                     isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <option value="">Select weekly kilometers</option>
+                  <option value="">Sélectionnez les kilomètres hebdomadaires</option>
                   <option value="0-5">0-5 km</option>
                   <option value="6-15">6-15 km</option>
                   <option value="16-25">16-25 km</option>
@@ -904,7 +904,7 @@ function ProfileContent() {
                   htmlFor="longestDistance"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  What is the longest distance you have run?{" "}
+                  Quelle est la plus longue distance que tu as courue ?{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -918,17 +918,17 @@ function ProfileContent() {
                     isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <option value="">Select longest distance</option>
-                  <option value="Less than 5K">Less than 5K</option>
-                  <option value="5K">5K</option>
-                  <option value="10K">10K</option>
-                  <option value="15K">15K</option>
+                  <option value="">Sélectionnez la distance la plus longue</option>
+                  <option value="Less than 5K">Moins de 5KM</option>
+                  <option value="5K">5KM</option>
+                  <option value="10K">10KM</option>
+                  <option value="15K">15KM</option>
                   <option value="Half Marathon (21K)">
-                    Half Marathon (21K)
+                    Semi-marathon (21KM)
                   </option>
-                  <option value="Marathon (42K)">Marathon (42K)</option>
+                  <option value="Marathon (42K)">Marathon (42KM)</option>
                   <option value="Ultra Marathon (50K+)">
-                    Ultra Marathon (50K+)
+                    Ultra Marathon (50KM+)
                   </option>
                 </select>
               </div>
@@ -938,13 +938,13 @@ function ProfileContent() {
                   htmlFor="recent5kTime"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Recent time on 5K (optional)
+                  Temps récent sur 5KM (optionnel)
                 </label>
                 <input
                   type="text"
                   id="recent5kTime"
                   name="recent5kTime"
-                  placeholder="e.g., 25:30 (MM:SS)"
+                  placeholder="ex : 25:30 (MM:SS)"
                   value={formData.recent5kTime}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
@@ -959,13 +959,13 @@ function ProfileContent() {
                   htmlFor="recent10kTime"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Recent time on 10K (optional)
+                  Temps récent sur 10KM (optionnel)
                 </label>
                 <input
                   type="text"
                   id="recent10kTime"
                   name="recent10kTime"
-                  placeholder="e.g., 55:00 (MM:SS)"
+                  placeholder="ex : 55:00 (MM:SS)"
                   value={formData.recent10kTime}
                   onChange={handleInputChange}
                   readOnly={isReadOnly}
@@ -980,12 +980,12 @@ function ProfileContent() {
           {/* Training Equipment */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Training Equipment
+              Équipement d&apos;entraînement
             </h2>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-4">
-                What equipment do you have access to for training?
+                À quel équipement as-tu accès pour l&apos;entraînement ?
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {equipmentOptions.map((equipment) => (
@@ -1014,13 +1014,13 @@ function ProfileContent() {
           {/* Health Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Health Information
+              Informations de santé
             </h2>
 
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Do you currently have any injuries?{" "}
+                  As-tu actuellement des blessures ?{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <div className="space-y-2">
@@ -1036,7 +1036,7 @@ function ProfileContent() {
                         isReadOnly ? "cursor-not-allowed opacity-50" : ""
                       }`}
                     />
-                    <span className="ml-2 text-sm text-gray-700">Yes</span>
+                    <span className="ml-2 text-sm text-gray-700">Oui</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -1050,7 +1050,7 @@ function ProfileContent() {
                         isReadOnly ? "cursor-not-allowed opacity-50" : ""
                       }`}
                     />
-                    <span className="ml-2 text-sm text-gray-700">No</span>
+                    <span className="ml-2 text-sm text-gray-700">Non</span>
                   </label>
                 </div>
               </div>
@@ -1061,7 +1061,7 @@ function ProfileContent() {
                     htmlFor="injuryDetails"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Please describe your injury/injuries
+                    Décris ta/tes blessure(s)
                   </label>
                   <textarea
                     id="injuryDetails"
@@ -1073,14 +1073,14 @@ function ProfileContent() {
                     className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
                       isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                     }`}
-                    placeholder="Describe your current injuries, their severity, and any limitations they cause..."
+                    placeholder="Décris tes blessures actuelles, leur gravité et les limitations qu'elles causent..."
                   ></textarea>
                 </div>
               )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Did you have any significant injuries in the past?{" "}
+                  As-tu eu des blessures importantes dans le passé ?{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <div className="space-y-2">
@@ -1096,7 +1096,7 @@ function ProfileContent() {
                         isReadOnly ? "cursor-not-allowed opacity-50" : ""
                       }`}
                     />
-                    <span className="ml-2 text-sm text-gray-700">Yes</span>
+                    <span className="ml-2 text-sm text-gray-700">Oui</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -1110,7 +1110,7 @@ function ProfileContent() {
                         isReadOnly ? "cursor-not-allowed opacity-50" : ""
                       }`}
                     />
-                    <span className="ml-2 text-sm text-gray-700">No</span>
+                    <span className="ml-2 text-sm text-gray-700">Non</span>
                   </label>
                 </div>
               </div>
@@ -1121,7 +1121,7 @@ function ProfileContent() {
                     htmlFor="pastInjuryDetails"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Please describe your past injury/injuries
+                    Décris ta/tes blessure(s) passée(s)
                   </label>
                   <textarea
                     id="pastInjuryDetails"
@@ -1133,7 +1133,7 @@ function ProfileContent() {
                     className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
                       isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                     }`}
-                    placeholder="Describe your past injuries, when they occurred, and if they still affect you..."
+                    placeholder="Décris tes blessures passées, quand elles sont survenues et si elles t'affectent toujours..."
                   ></textarea>
                 </div>
               )}
@@ -1147,7 +1147,7 @@ function ProfileContent() {
                       htmlFor="height"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Height (cm)
+                      Taille (cm)
                     </label>
                     <input
                       type="number"
@@ -1162,7 +1162,7 @@ function ProfileContent() {
                       className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
                         isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                       }`}
-                      placeholder="e.g., 170"
+                      placeholder="ex : 170"
                     />
                   </div>
 
@@ -1171,7 +1171,7 @@ function ProfileContent() {
                       htmlFor="weight"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Weight (kg)
+                      Poids (kg)
                     </label>
                     <input
                       type="number"
@@ -1186,7 +1186,7 @@ function ProfileContent() {
                       className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
                         isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                       }`}
-                      placeholder="e.g., 70"
+                      placeholder="ex : 70"
                     />
                   </div>
 
@@ -1195,7 +1195,7 @@ function ProfileContent() {
                       htmlFor="bmi"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      BMI (calculated)
+                      IMC (calculé)
                     </label>
                     <input
                       type="text"
@@ -1204,18 +1204,18 @@ function ProfileContent() {
                       value={currentBMI}
                       readOnly
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 cursor-not-allowed"
-                      placeholder="Auto-calculated"
+                      placeholder="Calculé automatiquement"
                     />
                     {currentBMI && (
                       <p className="text-xs text-gray-500 mt-1">
-                        {parseFloat(currentBMI) < 18.5 && "Underweight"}
+                        {parseFloat(currentBMI) < 18.5 && "Insuffisance pondérale"}
                         {parseFloat(currentBMI) >= 18.5 &&
                           parseFloat(currentBMI) < 25 &&
-                          "Normal weight"}
+                          "Poids normal"}
                         {parseFloat(currentBMI) >= 25 &&
                           parseFloat(currentBMI) < 30 &&
-                          "Overweight"}
-                        {parseFloat(currentBMI) >= 30 && "Obese"}
+                          "Surpoids"}
+                        {parseFloat(currentBMI) >= 30 && "Obésité"}
                       </p>
                     )}
                   </div>
@@ -1228,7 +1228,7 @@ function ProfileContent() {
                       htmlFor="bodyFatPercentage"
                       className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Body Fat Percentage (%)
+                      Pourcentage de graisse corporelle (%)
                     </label>
                     <input
                       type="number"
@@ -1243,10 +1243,10 @@ function ProfileContent() {
                       className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
                         isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                       }`}
-                      placeholder="e.g., 15.5"
+                      placeholder="ex : 15.5"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Estimated body fat percentage
+                      Pourcentage de graisse corporelle estimé
                     </p>
                   </div>
                 </div>
@@ -1257,13 +1257,13 @@ function ProfileContent() {
           {/* Smartwatch Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Device Information
+              Informations sur l&apos;appareil
             </h2>
 
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Do you have a smartwatch?{" "}
+                  As-tu une montre connectée ?{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <div className="space-y-2">
@@ -1279,7 +1279,7 @@ function ProfileContent() {
                         isReadOnly ? "cursor-not-allowed opacity-50" : ""
                       }`}
                     />
-                    <span className="ml-2 text-sm text-gray-700">Yes</span>
+                    <span className="ml-2 text-sm text-gray-700">Oui</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -1293,7 +1293,7 @@ function ProfileContent() {
                         isReadOnly ? "cursor-not-allowed opacity-50" : ""
                       }`}
                     />
-                    <span className="ml-2 text-sm text-gray-700">No</span>
+                    <span className="ml-2 text-sm text-gray-700">Non</span>
                   </label>
                 </div>
               </div>
@@ -1304,7 +1304,7 @@ function ProfileContent() {
                     htmlFor="smartwatchType"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    What type of smartwatch do you have?
+                    Quel type de montre connectée as-tu ?
                   </label>
                   <select
                     id="smartwatchType"
@@ -1316,7 +1316,7 @@ function ProfileContent() {
                       isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
                     }`}
                   >
-                    <option value="">Select your smartwatch</option>
+                    <option value="">Sélectionnez votre montre connectée</option>
                     {smartwatchTypes.map((type) => (
                       <option key={type} value={type}>
                         {type}
@@ -1334,8 +1334,8 @@ function ProfileContent() {
               {!isFormValid() && (
                 <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-700">
-                    Please fill in all required fields marked with * to save
-                    your profile.
+                    Merci de remplir tous les champs obligatoires marqués d&apos;un * pour enregistrer
+                    ton profil.
                   </p>
                 </div>
               )}
@@ -1345,7 +1345,7 @@ function ProfileContent() {
                   onClick={handleCancel}
                   className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
@@ -1355,7 +1355,7 @@ function ProfileContent() {
                   {saving && (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   )}
-                  <span>{saving ? "Saving..." : "Save Profile"}</span>
+                  <span>{saving ? "Enregistrement..." : "Enregistrer le profil"}</span>
                 </button>
               </div>
             </div>

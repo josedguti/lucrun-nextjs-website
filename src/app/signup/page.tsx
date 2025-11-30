@@ -23,14 +23,14 @@ export default function Signup() {
 
     // Validate passwords match
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Les mots de passe ne correspondent pas");
       setIsLoading(false);
       return;
     }
 
     // Validate password length
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError("Le mot de passe doit contenir au moins 6 caractères");
       setIsLoading(false);
       return;
     }
@@ -42,7 +42,7 @@ export default function Signup() {
         router.push("/login");
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
     } finally {
       setIsLoading(false);
     }
@@ -70,13 +70,13 @@ export default function Signup() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Account Created!
+                Compte créé !
               </h1>
               <p className="text-gray-600 mb-4">
-                Please check your email to verify your account.
+                Veuillez vérifier votre e-mail pour activer votre compte.
               </p>
               <p className="text-sm text-gray-500">
-                You&apos;ll be redirected to the login page shortly...
+                Vous serez redirigé vers la page de connexion dans un instant...
               </p>
             </div>
           </div>
@@ -91,10 +91,10 @@ export default function Signup() {
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Create Account
+              Créer un compte
             </h1>
             <p className="text-gray-600">
-              Join LucRun and start your running journey
+              Rejoignez LucRun et commencez votre aventure running
             </p>
           </div>
 
@@ -111,7 +111,7 @@ export default function Signup() {
                   htmlFor="firstName"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  First Name
+                  Prénom
                 </label>
                 <input
                   type="text"
@@ -122,7 +122,7 @@ export default function Signup() {
                   required
                   disabled={isLoading}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                  placeholder="First name"
+                  placeholder="Prénom"
                 />
               </div>
               <div>
@@ -130,7 +130,7 @@ export default function Signup() {
                   htmlFor="lastName"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Last Name
+                  Nom
                 </label>
                 <input
                   type="text"
@@ -141,7 +141,7 @@ export default function Signup() {
                   required
                   disabled={isLoading}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                  placeholder="Last name"
+                  placeholder="Nom"
                 />
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function Signup() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Email Address
+                Adresse e-mail
               </label>
               <input
                 type="email"
@@ -162,7 +162,7 @@ export default function Signup() {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50"
-                placeholder="your.email@example.com"
+                placeholder="votre.email@exemple.com"
               />
             </div>
 
@@ -171,7 +171,7 @@ export default function Signup() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Password
+                Mot de passe
               </label>
               <input
                 type="password"
@@ -182,10 +182,10 @@ export default function Signup() {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50"
-                placeholder="Create a password"
+                placeholder="Créez un mot de passe"
               />
               <p className="mt-1 text-sm text-gray-500">
-                Must be at least 6 characters long
+                Doit contenir au moins 6 caractères
               </p>
             </div>
 
@@ -194,7 +194,7 @@ export default function Signup() {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Confirm Password
+                Confirmer le mot de passe
               </label>
               <input
                 type="password"
@@ -205,7 +205,7 @@ export default function Signup() {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50"
-                placeholder="Confirm your password"
+                placeholder="Confirmez votre mot de passe"
               />
             </div>
 
@@ -214,18 +214,18 @@ export default function Signup() {
               disabled={isLoading}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Creating account..." : "Create Account"}
+              {isLoading ? "Création du compte..." : "Créer un compte"}
             </button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              Already have an account?{" "}
+              Vous avez déjà un compte ?{" "}
               <Link
                 href="/login"
                 className="text-blue-600 hover:text-blue-800 font-semibold"
               >
-                Sign in here
+                Connectez-vous ici
               </Link>
             </p>
           </div>

@@ -23,18 +23,18 @@ export default function Programs() {
   const programs = [
     {
       id: "beginner",
-      title: "Beginner",
-      subtitle: "Start your running journey",
-      duration: "8 weeks",
-      frequency: "3 days/week",
-      price: "$49/month",
+      title: "Débutant",
+      subtitle: "Commencez votre parcours de course",
+      duration: "8 semaines",
+      frequency: "3 jours/semaine",
+      price: "$49/mois",
       description:
-        "Perfect for new runners. Learn proper technique and build endurance safely.",
+        "Parfait pour les nouveaux coureurs. Apprenez la technique appropriée et développez votre endurance en toute sécurité.",
       features: [
-        "Walk-run intervals",
-        "Basic running form",
-        "Injury prevention",
-        "Progress tracking",
+        "Intervalles marche-course",
+        "Foulée de base",
+        "Prévention des blessures",
+        "Suivi des progrès",
       ],
       color: "green",
       icon: (
@@ -55,18 +55,18 @@ export default function Programs() {
     },
     {
       id: "5k-10k",
-      title: "5K to 10K",
-      subtitle: "Build your distance",
-      duration: "10 weeks",
-      frequency: "4 days/week",
-      price: "$59/month",
+      title: "5KM à 10KM",
+      subtitle: "Augmentez votre distance",
+      duration: "10 semaines",
+      frequency: "4 jours/semaine",
+      price: "$59/mois",
       description:
-        "Progress from 5K to 10K with structured training and speed work.",
+        "Progressez du 5KM au 10KM avec un entraînement structuré et un travail de vitesse.",
       features: [
-        "Distance progression",
-        "Speed intervals",
-        "Race preparation",
-        "Pacing strategies",
+        "Progression de distance",
+        "Intervalles de vitesse",
+        "Préparation de course",
+        "Stratégies d'allure",
       ],
       color: "blue",
       icon: (
@@ -88,17 +88,17 @@ export default function Programs() {
     {
       id: "semi-marathon",
       title: "Semi-Marathon",
-      subtitle: "Half marathon training",
-      duration: "12 weeks",
-      frequency: "4-5 days/week",
-      price: "$69/month",
+      subtitle: "Entraînement semi-marathon",
+      duration: "12 semaines",
+      frequency: "4-5 jours/semaine",
+      price: "$69/mois",
       description:
-        "Train for your first or improve your half marathon performance.",
+        "Entraînez-vous pour votre premier semi-marathon ou améliorez vos performances.",
       features: [
-        "Long run progression",
-        "Tempo training",
-        "Race nutrition",
-        "Mental preparation",
+        "Progression de course longue",
+        "Entraînement tempo",
+        "Nutrition de course",
+        "Préparation mentale",
       ],
       color: "purple",
       icon: (
@@ -119,18 +119,18 @@ export default function Programs() {
     },
     {
       id: "marathon",
-      title: "Special Marathon",
-      subtitle: "Full marathon mastery",
-      duration: "16 weeks",
-      frequency: "5-6 days/week",
-      price: "$89/month",
+      title: "Marathon Spécial",
+      subtitle: "Maîtrise du marathon complet",
+      duration: "16 semaines",
+      frequency: "5-6 jours/semaine",
+      price: "$89/mois",
       description:
-        "Comprehensive marathon training for serious runners seeking excellence.",
+        "Entraînement marathon complet pour les coureurs sérieux recherchant l'excellence.",
       features: [
-        "Periodized training",
-        "Advanced nutrition",
-        "Recovery protocols",
-        "Race strategy",
+        "Entraînement périodisé",
+        "Nutrition avancée",
+        "Protocoles de récupération",
+        "Stratégie de course",
       ],
       color: "red",
       icon: (
@@ -152,17 +152,17 @@ export default function Programs() {
     {
       id: "trail-running",
       title: "Trail Running",
-      subtitle: "Off-road adventures",
-      duration: "12 weeks",
-      frequency: "4 days/week",
-      price: "$75/month",
+      subtitle: "Aventures hors sentiers",
+      duration: "12 semaines",
+      frequency: "4 jours/semaine",
+      price: "$75/mois",
       description:
-        "Master trail running techniques, terrain navigation, and outdoor endurance.",
+        "Maîtrisez les techniques de trail, la navigation sur terrain et l'endurance en plein air.",
       features: [
-        "Terrain techniques",
-        "Hill training",
-        "Equipment guidance",
-        "Safety protocols",
+        "Techniques de terrain",
+        "Entraînement en côte",
+        "Conseils sur l'équipement",
+        "Protocoles de sécurité",
       ],
       color: "emerald",
       icon: (
@@ -184,17 +184,17 @@ export default function Programs() {
     {
       id: "ultra-trail",
       title: "Ultra Trail Running",
-      subtitle: "Extreme endurance",
-      duration: "20 weeks",
-      frequency: "5-6 days/week",
-      price: "$129/month",
+      subtitle: "Endurance extrême",
+      duration: "20 semaines",
+      frequency: "5-6 jours/semaine",
+      price: "$129/mois",
       description:
-        "Elite ultra-trail training for multi-hour mountain adventures and races.",
+        "Entraînement ultra-trail d'élite pour les aventures et courses en montagne de plusieurs heures.",
       features: [
         "Ultra endurance",
-        "Mountain techniques",
-        "Nutrition strategies",
-        "Mental toughness",
+        "Techniques de montagne",
+        "Stratégies nutritionnelles",
+        "Résistance mentale",
       ],
       color: "indigo",
       icon: (
@@ -422,7 +422,7 @@ export default function Programs() {
       <DashboardLayout>
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Training Programs
+            Programmes d&apos;entraînement
           </h1>
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -437,11 +437,10 @@ export default function Programs() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Training Programs
+            Programmes d&apos;entraînement
           </h1>
           <p className="text-lg text-gray-600">
-            Choose the program that matches your current fitness level and
-            running goals.
+            Choisissez le programme qui correspond à votre niveau de forme actuel et à vos objectifs de course.
           </p>
         </div>
 
@@ -473,11 +472,11 @@ export default function Programs() {
               </div>
               <div className="ml-4 flex-1">
                 <h3 className="text-lg font-semibold text-green-800 mb-1">
-                  Your Current Program
+                  Votre programme actuel
                 </h3>
                 <p className="text-xl font-bold text-gray-900 mb-2">
                   {programs.find((p) => p.id === enrolledProgramType)?.title ||
-                    "Training Program"}
+                    "Programme d&apos;entraînement"}
                 </p>
                 <p className="text-sm text-gray-600 mb-3">
                   {
@@ -556,7 +555,7 @@ export default function Programs() {
                       </h3>
                       {enrolledProgramType === program.id && (
                         <span className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                          Active
+                          Actif
                         </span>
                       )}
                     </div>
@@ -584,10 +583,10 @@ export default function Programs() {
                   )}
                   <span>
                     {enrolling === program.id
-                      ? "Enrolling..."
+                      ? "Inscription en cours..."
                       : hasActiveEnrollment
-                      ? "Already Enrolled"
-                      : "Start This Program"}
+                      ? "Déjà inscrit"
+                      : "Commencer ce programme"}
                   </span>
                 </button>
 

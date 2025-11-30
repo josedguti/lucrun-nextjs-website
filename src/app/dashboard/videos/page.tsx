@@ -70,9 +70,9 @@ export default function Videos() {
   const videos: Video[] = [
     {
       id: "1",
-      title: "Proper Running Form Fundamentals",
+      title: "Les fondamentaux de la foulée",
       description:
-        "Learn the essential elements of efficient running form including posture, cadence, and foot strike patterns. Perfect for beginners and experienced runners looking to improve technique.",
+        "Apprenez les éléments essentiels d&apos;une foulée efficace, y compris la posture, la cadence et les schémas d&apos;appui. Parfait pour les débutants et les coureurs expérimentés souhaitant améliorer leur technique.",
       duration: "12:34",
       thumbnail:
         "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=225&fit=crop",
@@ -80,9 +80,9 @@ export default function Videos() {
     },
     {
       id: "2",
-      title: "5K Training Plan Workout",
+      title: "Plan d&apos;entraînement 5KM",
       description:
-        "Follow along with this structured interval training session designed to improve your 5K race time. Includes warm-up, intervals, and cool-down phases.",
+        "Suivez cette séance d&apos;entraînement par intervalles structurée, conçue pour améliorer votre temps sur 5KM. Comprend l'échauffement, les intervalles et la phase de récupération.",
       duration: "25:18",
       thumbnail:
         "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=225&fit=crop",
@@ -90,9 +90,9 @@ export default function Videos() {
     },
     {
       id: "3",
-      title: "Pre-Run Nutrition Guide",
+      title: "Guide nutritionnel avant la course",
       description:
-        "Discover what to eat before your runs for optimal performance. Learn about timing, portion sizes, and the best foods for different types of workouts.",
+        "Découvrez quoi manger avant vos courses pour des performances optimales. Apprenez le timing, les portions et les meilleurs aliments pour différents types d&apos;entraînement.",
       duration: "8:42",
       thumbnail:
         "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=225&fit=crop",
@@ -100,9 +100,9 @@ export default function Videos() {
     },
     {
       id: "4",
-      title: "Post-Run Recovery Routine",
+      title: "Routine de récupération après course",
       description:
-        "Essential stretching and recovery techniques to prevent injury and improve performance. Includes dynamic stretches, foam rolling, and breathing exercises.",
+        "Techniques essentielles d'étirement et de récupération pour prévenir les blessures et améliorer les performances. Comprend des étirements dynamiques, l'utilisation du rouleau de massage et des exercices de respiration.",
       duration: "15:27",
       thumbnail:
         "https://images.unsplash.com/photo-1506629905965-c319a2dbaa5e?w=400&h=225&fit=crop",
@@ -110,9 +110,9 @@ export default function Videos() {
     },
     {
       id: "5",
-      title: "Hill Running Technique",
+      title: "Technique de course en côte",
       description:
-        "Master the art of hill running with proper technique for both uphill and downhill sections. Learn how to maintain pace and prevent fatigue on challenging terrain.",
+        "Maîtrisez l'art de la course en côte avec une technique appropriée pour les montées et les descentes. Apprenez à maintenir votre rythme et à prévenir la fatigue sur un terrain difficile.",
       duration: "18:55",
       thumbnail:
         "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=225&fit=crop",
@@ -120,9 +120,9 @@ export default function Videos() {
     },
     {
       id: "6",
-      title: "Marathon Training Mental Strategies",
+      title: "Stratégies mentales pour le marathon",
       description:
-        "Develop mental toughness and strategies for long-distance running. Learn visualization techniques, pain management, and how to stay motivated during training.",
+        "Développez votre résistance mentale et vos stratégies pour la course longue distance. Apprenez les techniques de visualisation, la gestion de la douleur et comment rester motivé pendant l'entraînement.",
       duration: "22:13",
       thumbnail:
         "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=225&fit=crop",
@@ -150,20 +150,20 @@ export default function Videos() {
       case "technique":
         return "Technique";
       case "training":
-        return "Training";
+        return "Entraînement";
       case "nutrition":
         return "Nutrition";
       case "recovery":
-        return "Recovery";
+        return "Récupération";
       default:
-        return "General";
+        return "Général";
     }
   };
 
   const handlePlayVideo = (videoId: string) => {
     setPlayingVideo(videoId);
     // Here you would typically open a video player modal or navigate to a video player page
-    alert(`Playing video: ${videos.find((v) => v.id === videoId)?.title}`);
+    alert(`Lecture de la vidéo : ${videos.find((v) => v.id === videoId)?.title}`);
   };
 
   if (loading) {
@@ -173,7 +173,7 @@ export default function Videos() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading...</p>
+              <p className="text-gray-600">Chargement...</p>
             </div>
           </div>
         </div>
@@ -186,11 +186,10 @@ export default function Videos() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Training Videos
+            Vidéos d&apos;entraînement
           </h1>
           <p className="text-lg text-gray-600">
-            Watch expert-led videos to improve your running technique, training,
-            and performance.
+            Regardez des vidéos dirigées par des experts pour améliorer votre technique de course, votre entraînement et vos performances.
           </p>
         </div>
 
@@ -265,7 +264,7 @@ export default function Videos() {
                   >
                     <path d="M8 5v14l11-7z" />
                   </svg>
-                  Watch Video
+                  Regarder la vidéo
                 </button>
               </div>
             </div>

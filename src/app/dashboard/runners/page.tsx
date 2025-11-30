@@ -174,7 +174,7 @@ export default function RunnersPage() {
 
   const getActiveProgram = (runner: RunnerDetail) => {
     const activeEnrollment = runner.programEnrollments.find((e) => e.is_active);
-    return activeEnrollment?.training_programs?.title || "Program Not Chosen";
+    return activeEnrollment?.training_programs?.title || "Programme non choisi";
   };
 
   const handleViewProfile = (runner: RunnerDetail) => {
@@ -227,7 +227,7 @@ export default function RunnersPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading runners...</p>
+              <p className="text-gray-600">Chargement des coureurs...</p>
             </div>
           </div>
         </div>
@@ -241,10 +241,10 @@ export default function RunnersPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Manage Runners
+            Gérer les coureurs
           </h1>
           <p className="text-lg text-gray-600">
-            View and manage all registered runners
+            Voir et gérer tous les coureurs inscrits
           </p>
         </div>
 
@@ -254,25 +254,25 @@ export default function RunnersPage() {
             <div className="text-2xl font-bold text-gray-900">
               {runners.length}
             </div>
-            <div className="text-sm text-gray-600">Total Runners</div>
+            <div className="text-sm text-gray-600">Total de coureurs</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-green-600">
               {runners.filter((r) => r.profile.is_active).length}
             </div>
-            <div className="text-sm text-gray-600">Approved & Active</div>
+            <div className="text-sm text-gray-600">Approuvés et actifs</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-yellow-600">
               {runners.filter((r) => !r.profile.is_active).length}
             </div>
-            <div className="text-sm text-gray-600">Pending Approval</div>
+            <div className="text-sm text-gray-600">En attente d&apos;approbation</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-2xl font-bold text-blue-600">
               {runners.filter((r) => getRunnerStatus(r) === "Ready").length}
             </div>
-            <div className="text-sm text-gray-600">Setup Complete</div>
+            <div className="text-sm text-gray-600">Configuration terminée</div>
           </div>
         </div>
 
@@ -284,7 +284,7 @@ export default function RunnersPage() {
                 ? `${runner.profile.first_name} ${runner.profile.last_name}`
                 : runner.profile.first_name ||
                   runner.profile.email?.split("@")[0] ||
-                  "Unknown User";
+                  "Utilisateur inconnu";
 
             const programName = getActiveProgram(runner);
 
@@ -318,7 +318,7 @@ export default function RunnersPage() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">
-                      Program:
+                      Programme :
                     </span>
                     <span
                       className={`text-sm px-2 py-1 rounded-full ${
@@ -338,13 +338,13 @@ export default function RunnersPage() {
                     <div className="text-2xl font-bold text-blue-600">
                       {runner.sessionCount}
                     </div>
-                    <div className="text-xs text-gray-500">Total Sessions</div>
+                    <div className="text-xs text-gray-500">Séances totales</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
                       {runner.completedSessions}
                     </div>
-                    <div className="text-xs text-gray-500">Completed</div>
+                    <div className="text-xs text-gray-500">Complétées</div>
                   </div>
                 </div>
 
@@ -367,7 +367,7 @@ export default function RunnersPage() {
                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                       />
                     </svg>
-                    Profile
+                    Profil
                   </button>
                   <button
                     onClick={() => handleViewCalendar(runner)}
@@ -386,7 +386,7 @@ export default function RunnersPage() {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z"
                       />
                     </svg>
-                    Calendar
+                    Calendrier
                   </button>
                   <button
                     onClick={() => handleViewHealthSurvey(runner)}
@@ -405,7 +405,7 @@ export default function RunnersPage() {
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    Health
+                    Santé
                   </button>
                 </div>
 
@@ -413,7 +413,7 @@ export default function RunnersPage() {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">
-                      Approved:
+                      Approuvé :
                     </span>
                     <button
                       onClick={() => handleToggleApproval(runner)}
@@ -424,8 +424,8 @@ export default function RunnersPage() {
                       }`}
                       title={
                         runner.profile.is_active
-                          ? "Click to revoke approval"
-                          : "Click to approve runner"
+                          ? "Cliquez pour révoquer l&apos;approbation"
+                          : "Cliquez pour approuver le coureur"
                       }
                     >
                       <span
@@ -439,12 +439,12 @@ export default function RunnersPage() {
                   </div>
                   {runner.profile.is_active && (
                     <p className="text-xs text-green-600 mt-2 text-center">
-                      ✓ Active - Can view calendar
+                      ✓ Actif - Peut voir le calendrier
                     </p>
                   )}
                   {!runner.profile.is_active && (
                     <p className="text-xs text-gray-500 mt-2 text-center">
-                      Pending approval
+                      En attente d&apos;approbation
                     </p>
                   )}
                 </div>
@@ -452,8 +452,8 @@ export default function RunnersPage() {
                 {/* Join Date */}
                 <div className="mt-2 pt-2 border-t border-gray-200">
                   <p className="text-xs text-gray-500 text-center">
-                    Joined{" "}
-                    {new Date(runner.profile.created_at).toLocaleDateString()}
+                    Inscrit le{" "}
+                    {new Date(runner.profile.created_at).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
               </div>
@@ -477,10 +477,10 @@ export default function RunnersPage() {
               />
             </svg>
             <h3 className="mt-2 text-sm font-medium text-gray-900">
-              No runners yet
+              Aucun coureur pour le moment
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              Runners will appear here as they sign up.
+              Les coureurs apparaîtront ici au fur et à mesure de leur inscription.
             </p>
           </div>
         )}

@@ -18,7 +18,7 @@ function LoginForm() {
   useEffect(() => {
     const redirect = searchParams.get("redirect");
     if (redirect === "dashboard") {
-      setRedirectMessage("Please log in to access the dashboard.");
+      setRedirectMessage("Veuillez vous connecter pour accéder au tableau de bord.");
     }
   }, [searchParams]);
 
@@ -31,7 +31,7 @@ function LoginForm() {
       await authService.signIn({ email, password });
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite");
     } finally {
       setIsLoading(false);
     }
@@ -43,9 +43,9 @@ function LoginForm() {
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome Back
+              Bon retour
             </h1>
-            <p className="text-gray-600">Sign in to your LucRun account</p>
+            <p className="text-gray-600">Connectez-vous à votre compte LucRun</p>
           </div>
 
           {redirectMessage && (
@@ -66,7 +66,7 @@ function LoginForm() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Email Address
+                Adresse e-mail
               </label>
               <input
                 type="email"
@@ -77,7 +77,7 @@ function LoginForm() {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                placeholder="your.email@example.com"
+                placeholder="votre.email@exemple.com"
               />
             </div>
 
@@ -86,7 +86,7 @@ function LoginForm() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Password
+                Mot de passe
               </label>
               <input
                 type="password"
@@ -97,7 +97,7 @@ function LoginForm() {
                 required
                 disabled={isLoading}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:opacity-50 text-gray-900"
-                placeholder="Enter your password"
+                placeholder="Entrez votre mot de passe"
               />
             </div>
 
@@ -116,14 +116,14 @@ function LoginForm() {
                   htmlFor="remember-me"
                   className="ml-2 block text-sm text-gray-700"
                 >
-                  Remember me
+                  Se souvenir de moi
                 </label>
               </div>
               <Link
                 href="/forgot-password"
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                Forgot password?
+                Mot de passe oublié ?
               </Link>
             </div>
 
@@ -132,18 +132,18 @@ function LoginForm() {
               disabled={isLoading}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? "Connexion en cours..." : "Se connecter"}
             </button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              Don&apos;t have an account?{" "}
+              Vous n&apos;avez pas de compte ?{" "}
               <Link
                 href="/signup"
                 className="text-blue-600 hover:text-blue-800 font-semibold"
               >
-                Sign up here
+                Inscrivez-vous ici
               </Link>
             </p>
           </div>
@@ -155,7 +155,7 @@ function LoginForm() {
 
 export default function Login() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Chargement...</div>}>
       <LoginForm />
     </Suspense>
   );

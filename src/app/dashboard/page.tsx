@@ -135,15 +135,15 @@ function RunnerWeeklyCalendar() {
     const end = dates[6];
 
     if (start.getMonth() === end.getMonth()) {
-      return `${start.toLocaleDateString("en-US", {
+      return `${start.toLocaleDateString("fr-FR", {
         month: "long",
         day: "numeric",
       })} - ${end.getDate()}, ${end.getFullYear()}`;
     } else {
-      return `${start.toLocaleDateString("en-US", {
+      return `${start.toLocaleDateString("fr-FR", {
         month: "short",
         day: "numeric",
-      })} - ${end.toLocaleDateString("en-US", {
+      })} - ${end.toLocaleDateString("fr-FR", {
         month: "short",
         day: "numeric",
       })}, ${end.getFullYear()}`;
@@ -205,7 +205,7 @@ function RunnerWeeklyCalendar() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your calendar...</p>
+              <p className="text-gray-600">Chargement de ton calendrier...</p>
             </div>
           </div>
         </div>
@@ -225,8 +225,8 @@ function RunnerWeeklyCalendar() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {weekOffset === 0
-                  ? "This Week's Training"
-                  : "Training Schedule"}
+                  ? "Entraînement de cette semaine"
+                  : "Programme d&apos;entraînement"}
               </h1>
               <p className="text-lg text-gray-600">{getWeekRangeText()}</p>
             </div>
@@ -236,7 +236,7 @@ function RunnerWeeklyCalendar() {
               <button
                 onClick={goToPreviousWeek}
                 className="p-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
-                title="Previous week"
+                title="Semaine précédente"
               >
                 <svg
                   className="w-5 h-5 text-gray-600"
@@ -259,7 +259,7 @@ function RunnerWeeklyCalendar() {
                   onClick={goToCurrentWeek}
                   className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  Today
+                  Aujourd&apos;hui
                 </button>
               )}
 
@@ -267,7 +267,7 @@ function RunnerWeeklyCalendar() {
               <button
                 onClick={goToNextWeek}
                 className="p-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
-                title="Next week"
+                title="Semaine suivante"
               >
                 <svg
                   className="w-5 h-5 text-gray-600"
@@ -292,13 +292,13 @@ function RunnerWeeklyCalendar() {
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
             {[
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday",
-              "Saturday",
-              "Sunday",
+              "Lundi",
+              "Mardi",
+              "Mercredi",
+              "Jeudi",
+              "Vendredi",
+              "Samedi",
+              "Dimanche",
             ].map((day) => (
               <div
                 key={day}
@@ -346,7 +346,7 @@ function RunnerWeeklyCalendar() {
                       >
                         <div className="font-medium">{session.title}</div>
                         {session.is_completed && (
-                          <div className="text-xs mt-1">✓ Completed</div>
+                          <div className="text-xs mt-1">✓ Terminé</div>
                         )}
                       </div>
                     ))}
@@ -380,8 +380,8 @@ function RunnerWeeklyCalendar() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Full Calendar</h3>
-                <p className="text-sm text-gray-600">View all sessions</p>
+                <h3 className="font-semibold text-gray-900">Calendrier complet</h3>
+                <p className="text-sm text-gray-600">Voir toutes les séances</p>
               </div>
             </div>
           </Link>
@@ -413,8 +413,8 @@ function RunnerWeeklyCalendar() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Training Videos</h3>
-                <p className="text-sm text-gray-600">Watch tutorials</p>
+                <h3 className="font-semibold text-gray-900">Vidéos d&apos;entraînement</h3>
+                <p className="text-sm text-gray-600">Regarder les tutoriels</p>
               </div>
             </div>
           </Link>
@@ -440,8 +440,8 @@ function RunnerWeeklyCalendar() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">My Profile</h3>
-                <p className="text-sm text-gray-600">Update info</p>
+                <h3 className="font-semibold text-gray-900">Mon profil</h3>
+                <p className="text-sm text-gray-600">Mettre à jour les infos</p>
               </div>
             </div>
           </Link>
@@ -453,7 +453,7 @@ function RunnerWeeklyCalendar() {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Session Details
+                  Détails de la séance
                 </h2>
                 <button
                   onClick={closeSessionModal}
@@ -482,7 +482,7 @@ function RunnerWeeklyCalendar() {
                   </h3>
                   <p className="text-sm text-gray-600">
                     {new Date(selectedSession.session_date).toLocaleDateString(
-                      "en-US",
+                      "fr-FR",
                       {
                         weekday: "long",
                         year: "numeric",
@@ -514,7 +514,7 @@ function RunnerWeeklyCalendar() {
                   </span>
                   {selectedSession.is_completed && (
                     <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      ✓ Completed
+                      ✓ Terminé
                     </span>
                   )}
                 </div>
@@ -524,7 +524,7 @@ function RunnerWeeklyCalendar() {
                     href="/dashboard/calendar"
                     className="block w-full text-center bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    View in Full Calendar
+                    Voir dans le calendrier complet
                   </Link>
                 </div>
               </div>
@@ -923,7 +923,7 @@ function AdminDashboard() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading coach dashboard...</p>
+              <p className="text-gray-600">Chargement du tableau de bord coach...</p>
             </div>
           </div>
         </div>
@@ -940,17 +940,17 @@ function AdminDashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Coach Dashboard
+            Tableau de bord coach
           </h1>
           <p className="text-lg text-gray-600">
-            Monitor your runners and manage their training sessions
+            Surveille tes coureurs et gère leurs séances d&apos;entraînement
           </p>
         </div>
 
         {/* Section 1: Runners Awaiting Approval */}
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Runners Awaiting Your Approval ({runnersInProgress.length})
+            Coureurs en attente d&apos;approbation ({runnersInProgress.length})
           </h2>
           {runnersInProgress.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -992,19 +992,19 @@ function AdminDashboard() {
                           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      <span className="font-medium">Setup Complete</span>
+                      <span className="font-medium">Configuration terminée</span>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <p className="text-xs text-gray-600 mb-2">
-                      <strong>Action needed:</strong> Approve this runner in the
-                      Runners section
+                      <strong>Action requise :</strong> Approuver ce coureur dans la
+                      section Coureurs
                     </p>
                     <button
                       onClick={() => router.push("/dashboard/runners")}
                       className="w-full text-xs bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Go to Runners →
+                      Aller aux coureurs →
                     </button>
                   </div>
                 </div>
@@ -1013,7 +1013,7 @@ function AdminDashboard() {
           ) : (
             <div className="bg-white rounded-lg shadow p-6 text-center">
               <p className="text-gray-500">
-                No runners awaiting approval. All caught up! 🎉
+                Aucun coureur en attente d&apos;approbation. Tout est à jour ! 🎉
               </p>
             </div>
           )}
@@ -1022,7 +1022,7 @@ function AdminDashboard() {
         {/* Section 2: Weekly Calendar View */}
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            This Week&apos;s Training Sessions
+            Séances d&apos;entraînement de cette semaine
           </h2>
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {/* Day Headers */}
@@ -1100,21 +1100,21 @@ function AdminDashboard() {
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
-              Planning for Next Week ({nextWeekSessions.length} sessions
-              scheduled)
+              Planification de la semaine prochaine ({nextWeekSessions.length} séances
+              programmées)
             </h2>
             <Link
               href="/dashboard/calendar"
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
-              Create New Sessions →
+              Créer de nouvelles séances →
             </Link>
           </div>
 
           <div className="bg-white rounded-lg shadow p-4">
             {/* Week Header */}
             <div className="grid grid-cols-7 gap-2 mb-4">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+              {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
                 <div
                   key={day}
                   className="text-center text-sm font-medium text-gray-600 py-2"
@@ -1212,7 +1212,7 @@ function AdminDashboard() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-                <p className="text-blue-700">Saving changes...</p>
+                <p className="text-blue-700">Enregistrement des modifications...</p>
               </div>
             </div>
           </div>
@@ -1224,7 +1224,7 @@ function AdminDashboard() {
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Edit Training Session
+                  Modifier la séance d&apos;entraînement
                 </h2>
                 <button
                   onClick={closeSessionModal}
@@ -1251,7 +1251,7 @@ function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Session Type
+                      Type de séance
                     </label>
                     <select
                       value={editSession.type}
@@ -1316,7 +1316,7 @@ function AdminDashboard() {
                   {/* Session Completed */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Session Completed?
+                      Séance terminée ?
                     </label>
                     <div className="flex gap-4">
                       <label className="flex items-center">
@@ -1333,7 +1333,7 @@ function AdminDashboard() {
                           disabled={true}
                           className="mr-2 cursor-not-allowed opacity-50"
                         />
-                        Yes
+                        Oui
                       </label>
                       <label className="flex items-center">
                         <input
@@ -1349,7 +1349,7 @@ function AdminDashboard() {
                           disabled={true}
                           className="mr-2 cursor-not-allowed opacity-50"
                         />
-                        No
+                        Non
                       </label>
                     </div>
                   </div>
@@ -1357,7 +1357,7 @@ function AdminDashboard() {
                   {/* Constraints */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Any Constraints?
+                      Des contraintes ?
                     </label>
                     <div className="flex gap-4">
                       <label className="flex items-center">
@@ -1374,7 +1374,7 @@ function AdminDashboard() {
                           disabled={true}
                           className="mr-2 cursor-not-allowed opacity-50"
                         />
-                        Yes
+                        Oui
                       </label>
                       <label className="flex items-center">
                         <input
@@ -1390,7 +1390,7 @@ function AdminDashboard() {
                           disabled={true}
                           className="mr-2 cursor-not-allowed opacity-50"
                         />
-                        No
+                        Non
                       </label>
                     </div>
                   </div>
@@ -1399,7 +1399,7 @@ function AdminDashboard() {
                 {/* RPE - Read-only for Admin */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    RPE (Rate of Perceived Exertion)
+                    RPE (Taux d&apos;effort perçu)
                   </label>
                   <select
                     value={editSession.rpe}
@@ -1409,16 +1409,16 @@ function AdminDashboard() {
                     disabled={true}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-gray-100 cursor-not-allowed opacity-50"
                   >
-                    <option value="">Select</option>
-                    <option value="1">1 - Very Easy</option>
-                    <option value="2">2 - Easy</option>
-                    <option value="3">3 - Moderate</option>
-                    <option value="4">4 - Somewhat Hard</option>
-                    <option value="5">5 - Hard</option>
-                    <option value="6">6 - Very Hard</option>
-                    <option value="7">7 - Extremely Hard</option>
+                    <option value="">Sélectionner</option>
+                    <option value="1">1 - Très facile</option>
+                    <option value="2">2 - Facile</option>
+                    <option value="3">3 - Modéré</option>
+                    <option value="4">4 - Assez difficile</option>
+                    <option value="5">5 - Difficile</option>
+                    <option value="6">6 - Très difficile</option>
+                    <option value="7">7 - Extrêmement difficile</option>
                     <option value="8">8 - Intense</option>
-                    <option value="9">9 - Very Intense</option>
+                    <option value="9">9 - Très intense</option>
                     <option value="10">10 - Maximum</option>
                   </select>
                 </div>
@@ -1426,7 +1426,7 @@ function AdminDashboard() {
                 {/* Comments - Read-only for Admin */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Comments
+                    Commentaires
                   </label>
                   <textarea
                     value={editSession.comments}
@@ -1439,7 +1439,7 @@ function AdminDashboard() {
                     rows={3}
                     disabled={true}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-gray-100 cursor-not-allowed opacity-50"
-                    placeholder="Runner feedback will appear here"
+                    placeholder="Les commentaires du coureur apparaîtront ici"
                   />
                 </div>
 
@@ -1464,7 +1464,7 @@ function AdminDashboard() {
                       disabled={saving}
                       className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Cancel
+                      Annuler
                     </button>
                     <button
                       type="submit"
@@ -1474,7 +1474,7 @@ function AdminDashboard() {
                       {saving && (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       )}
-                      <span>{saving ? "Updating..." : "Update"}</span>
+                      <span>{saving ? "Mise à jour..." : "Mettre à jour"}</span>
                     </button>
                   </div>
                 </div>
@@ -1506,17 +1506,17 @@ function AdminDashboard() {
 
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Delete Training Session
+                    Supprimer la séance d&apos;entraînement
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Are you sure you want to delete this training session for{" "}
+                    Es-tu sûr de vouloir supprimer cette séance d&apos;entraînement pour{" "}
                     <span className="font-medium">
                       {selectedSession.user_name}
                     </span>
                     ?
                     <br />
                     <span className="text-sm text-gray-500">
-                      This action cannot be undone.
+                      Cette action ne peut pas être annulée.
                     </span>
                   </p>
                 </div>
@@ -1528,7 +1528,7 @@ function AdminDashboard() {
                     disabled={saving}
                     className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Cancel
+                    Annuler
                   </button>
                   <button
                     type="button"
@@ -1539,7 +1539,7 @@ function AdminDashboard() {
                     {saving && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     )}
-                    <span>{saving ? "Deleting..." : "Delete"}</span>
+                    <span>{saving ? "Suppression..." : "Supprimer"}</span>
                   </button>
                 </div>
               </div>
@@ -1566,23 +1566,23 @@ function DashboardContent() {
   const [checklist, setChecklist] = useState<ChecklistItem[]>([
     {
       id: "profile",
-      title: "Complete Your Profile",
-      description: "Set up your personal information and running preferences",
+      title: "Compléter ton profil",
+      description: "Configurer tes informations personnelles et préférences de course",
       href: "/dashboard/profile",
       completed: false,
     },
     {
       id: "health-survey",
-      title: "Health Survey",
-      description: "Complete the required health questionnaire",
+      title: "Questionnaire de santé",
+      description: "Compléter le questionnaire de santé requis",
       href: "/dashboard/health-survey",
       completed: false,
     },
     {
       id: "programs",
-      title: "Choose Training Program",
+      title: "Choisir un programme d&apos;entraînement",
       description:
-        "Select and enroll in a training program that fits your goals",
+        "Sélectionner et s&apos;inscrire à un programme d&apos;entraînement adapté à tes objectifs",
       href: "/dashboard/programs",
       completed: false,
     },
@@ -1788,11 +1788,11 @@ function DashboardContent() {
                 </div>
               </div>
               <h1 className="text-3xl font-bold mb-4">
-                🎉 Great! Meeting Scheduled!
+                🎉 Super ! Rendez-vous planifié !
               </h1>
               <p className="text-xl text-blue-100 mb-6">
-                You&apos;ve completed all setup steps and scheduled your
-                coaching session.
+                Tu as complété toutes les étapes de configuration et planifié ta
+                séance de coaching.
               </p>
             </div>
 
@@ -1815,35 +1815,35 @@ function DashboardContent() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Waiting for Coach Approval
+                En attente de l&apos;approbation du coach
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Luc is reviewing your profile and health information. After your
-                coaching call, he will activate your account and you&apos;ll get
-                access to your personalized calendar with workout sessions.
+                Luc examine ton profil et tes informations de santé. Après ton
+                appel de coaching, il activera ton compte et tu auras
+                accès à ton calendrier personnalisé avec les séances d&apos;entraînement.
               </p>
 
               <div className="mt-8">
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    What&apos;s Next?
+                    Quelle est la suite ?
                   </h3>
                   <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start">
                       <span className="text-green-500 mr-2">✓</span>
-                      Your coach is reviewing your information
+                      Ton coach examine tes informations
                     </li>
                     <li className="flex items-start">
                       <span className="text-blue-500 mr-2">○</span>
-                      Attend your scheduled coaching call
+                      Participe à ton appel de coaching programmé
                     </li>
                     <li className="flex items-start">
                       <span className="text-blue-500 mr-2">○</span>
-                      Coach will activate your account
+                      Le coach activera ton compte
                     </li>
                     <li className="flex items-start">
                       <span className="text-blue-500 mr-2">○</span>
-                      Access your personalized training calendar
+                      Accède à ton calendrier d&apos;entraînement personnalisé
                     </li>
                   </ul>
                 </div>
@@ -1851,10 +1851,10 @@ function DashboardContent() {
 
               <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Your calendar and personalized workouts
-                  will appear here automatically once your coach approves your
-                  account. This usually happens during or shortly after your
-                  coaching call.
+                  <strong>Note :</strong> Ton calendrier et tes entraînements personnalisés
+                  apparaîtront ici automatiquement une fois que ton coach aura approuvé ton
+                  compte. Cela se produit généralement pendant ou peu après ton
+                  appel de coaching.
                 </p>
               </div>
             </div>
@@ -1903,11 +1903,11 @@ function DashboardContent() {
                 </div>
               </div>
               <h1 className="text-3xl font-bold mb-4">
-                🎉 Welcome! You&apos;re All Set!
+                🎉 Bienvenue ! Tout est prêt !
               </h1>
               <p className="text-xl text-blue-100 mb-6">
-                Your account has been approved! You now have full access to your
-                personalized training calendar and all features.
+                Ton compte a été approuvé ! Tu as maintenant un accès complet à ton
+                calendrier d&apos;entraînement personnalisé et à toutes les fonctionnalités.
               </p>
             </div>
 
@@ -1930,61 +1930,61 @@ function DashboardContent() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Your Training Starts Now!
+                Ton entraînement commence maintenant !
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Your coach has activated your account! You can now view and
-                manage your personalized training calendar with all your
-                scheduled workout sessions.
+                Ton coach a activé ton compte ! Tu peux maintenant voir et
+                gérer ton calendrier d&apos;entraînement personnalisé avec toutes tes
+                séances d&apos;entraînement programmées.
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mt-8">
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    What&apos;s Next?
+                    Quelle est la suite ?
                   </h3>
                   <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start">
                       <span className="text-green-500 mr-2">✓</span>
-                      Coach reviewed your information
+                      Le coach a examiné tes informations
                     </li>
                     <li className="flex items-start">
                       <span className="text-green-500 mr-2">✓</span>
-                      Account activated and approved
+                      Compte activé et approuvé
                     </li>
                     <li className="flex items-start">
                       <span className="text-green-500 mr-2">✓</span>
-                      Access to personalized training calendar
+                      Accès au calendrier d&apos;entraînement personnalisé
                     </li>
                     <li className="flex items-start">
                       <span className="text-blue-500 mr-2">→</span>
-                      Start your customized workouts
+                      Commence tes entraînements personnalisés
                     </li>
                   </ul>
                 </div>
 
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6 border-2 border-blue-200">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    Get Started
+                    Commencer
                   </h3>
                   <div className="space-y-3">
                     <Link
                       href="/dashboard/calendar"
                       className="block bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 font-semibold transition-colors"
                     >
-                      📅 View Your Training Calendar
+                      📅 Voir ton calendrier d&apos;entraînement
                     </Link>
                     <Link
                       href="/dashboard/videos"
                       className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
-                      → Watch training videos
+                      → Regarder les vidéos d&apos;entraînement
                     </Link>
                     <Link
                       href="/dashboard/profile"
                       className="block text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
-                      → Review your profile
+                      → Consulter ton profil
                     </Link>
                   </div>
                 </div>
@@ -2015,10 +2015,10 @@ function DashboardContent() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Getting Started
+            Pour commencer
           </h1>
           <p className="text-lg text-gray-600">
-            Complete these steps to unlock your full training experience
+            Complète ces étapes pour débloquer ton expérience d&apos;entraînement complète
           </p>
         </div>
 
@@ -2044,11 +2044,11 @@ function DashboardContent() {
               <div className="ml-3">
                 <p className="text-sm font-medium text-green-800">
                   {successType === "profile" &&
-                    "🎉 Profile completed successfully! Your first step is now complete."}
+                    "🎉 Profil complété avec succès ! Ta première étape est terminée."}
                   {successType === "health-survey" &&
-                    "🎉 Health survey completed successfully! Another step towards your training journey."}
+                    "🎉 Questionnaire de santé complété avec succès ! Une étape de plus vers ton parcours d&apos;entraînement."}
                   {successType === "program-enrollment" &&
-                    "🎉 Program enrollment successful! You&apos;re now ready to start your training journey."}
+                    "🎉 Inscription au programme réussie ! Tu es maintenant prêt à commencer ton parcours d&apos;entraînement."}
                 </p>
               </div>
             </div>
@@ -2080,10 +2080,10 @@ function DashboardContent() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
-              Your Progress
+              Ta progression
             </h2>
             <span className="text-sm font-medium text-gray-600">
-              {completedCount} of {totalCount} completed
+              {completedCount} sur {totalCount} complété
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
@@ -2094,8 +2094,8 @@ function DashboardContent() {
           </div>
           <p className="text-sm text-gray-600 mt-2">
             {progressPercentage === 100
-              ? "🎉 Congratulations! You&apos;ve completed all setup steps!"
-              : `${Math.round(progressPercentage)}% complete`}
+              ? "🎉 Félicitations ! Tu as complété toutes les étapes de configuration !"
+              : `${Math.round(progressPercentage)}% complété`}
           </p>
         </div>
 
@@ -2105,12 +2105,12 @@ function DashboardContent() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <h2 className="text-2xl font-bold mb-2">
-                  🎉 Ready for Your Coaching Session!
+                  🎉 Prêt pour ta séance de coaching !
                 </h2>
                 <p className="text-blue-100 mb-4">
-                  Perfect! You&apos;ve completed all 3 setup steps. Now contact
-                  Luc via WhatsApp to schedule your personalized coaching call
-                  and get expert guidance tailored to your goals.
+                  Parfait ! Tu as complété les 3 étapes de configuration. Maintenant contacte
+                  Luc via WhatsApp pour planifier ton appel de coaching personnalisé
+                  et obtenir des conseils d&apos;expert adaptés à tes objectifs.
                 </p>
                 <div className="flex items-center text-blue-100 text-sm mb-4">
                   <svg
@@ -2126,7 +2126,7 @@ function DashboardContent() {
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>30-minute free consultation</span>
+                  <span>Consultation gratuite de 30 minutes</span>
                   <span className="mx-3">•</span>
                   <svg
                     className="w-4 h-4 mr-2"
@@ -2141,7 +2141,7 @@ function DashboardContent() {
                       d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2v8a2 2 0 002 2z"
                     />
                   </svg>
-                  <span>Video call via Zoom</span>
+                  <span>Appel vidéo via Zoom</span>
                 </div>
 
                 {/* WhatsApp Contact */}
@@ -2156,7 +2156,7 @@ function DashboardContent() {
                     </svg>
                     <div>
                       <p className="text-sm text-blue-100">
-                        Contact Coach Luc on WhatsApp:
+                        Contacte Coach Luc sur WhatsApp :
                       </p>
                       <p className="text-xl font-bold">+33 6 12 34 56 78</p>
                     </div>
@@ -2177,13 +2177,13 @@ function DashboardContent() {
                   >
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                   </svg>
-                  <span>Contact on WhatsApp</span>
+                  <span>Contacter sur WhatsApp</span>
                 </a>
                 <button
                   onClick={() => setShowMeetingConfirmation(true)}
                   className="bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-800 transition-colors"
                 >
-                  I&apos;ve Contacted the Coach
+                  J&apos;ai contacté le coach
                 </button>
               </div>
             </div>
@@ -2195,24 +2195,24 @@ function DashboardContent() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md mx-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Confirm Coach Contact
+                Confirmer le contact avec le coach
               </h3>
               <p className="text-gray-600 mb-6">
-                Have you successfully contacted Luc via WhatsApp to schedule
-                your coaching session?
+                As-tu réussi à contacter Luc via WhatsApp pour planifier
+                ta séance de coaching ?
               </p>
               <div className="flex space-x-3">
                 <button
                   onClick={handleMeetingScheduled}
                   className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Yes, I&apos;ve Contacted
+                  Oui, j&apos;ai contacté
                 </button>
                 <button
                   onClick={() => setShowMeetingConfirmation(false)}
                   className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
                 >
-                  Not Yet
+                  Pas encore
                 </button>
               </div>
             </div>
@@ -2303,7 +2303,7 @@ function DashboardContent() {
                     </p>
                     {item.locked && (
                       <p className="text-xs text-gray-500 mt-2">
-                        Complete all previous steps to unlock this section
+                        Complète toutes les étapes précédentes pour débloquer cette section
                       </p>
                     )}
                   </div>
@@ -2316,21 +2316,21 @@ function DashboardContent() {
                       href={item.href}
                       className="inline-flex items-center px-4 py-2 text-sm text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors"
                     >
-                      View
+                      Voir
                     </Link>
                   ) : item.locked ? (
                     <button
                       disabled
                       className="inline-flex items-center px-4 py-2 text-sm text-gray-500 bg-gray-200 rounded-lg cursor-not-allowed"
                     >
-                      Locked
+                      Verrouillé
                     </button>
                   ) : (
                     <Link
                       href={item.href}
                       className="inline-flex items-center px-4 py-2 text-sm text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
                     >
-                      Start
+                      Commencer
                     </Link>
                   )}
                 </div>
@@ -2343,12 +2343,12 @@ function DashboardContent() {
         {progressPercentage === 100 && !allStepsCompleted && (
           <div className="mt-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg p-6 text-white text-center">
             <h2 className="text-2xl font-bold mb-2">
-              🎉 Welcome to LucRun Training!
+              🎉 Bienvenue à l&apos;entraînement LucRun !
             </h2>
             <p className="text-lg opacity-90">
-              You&apos;re all set up and ready to start your running journey.
-              Don&apos;t forget to schedule your coaching call above and explore
-              your training calendar!
+              Tout est configuré et tu es prêt à commencer ton parcours de course.
+              N&apos;oublie pas de planifier ton appel de coaching ci-dessus et d&apos;explorer
+              ton calendrier d&apos;entraînement !
             </p>
           </div>
         )}

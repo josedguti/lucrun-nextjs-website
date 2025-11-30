@@ -357,50 +357,50 @@ function HealthSurveyContent() {
     {
       id: "familyCardiacDeath",
       question:
-        "Has a family member died suddenly from a cardiac or unexplained cause?",
+        "Un membre de votre famille est-il décédé subitement d&apos;une cause cardiaque ou inexpliquée ?",
       name: "familyCardiacDeath",
     },
     {
       id: "chestPainPalpitations",
       question:
-        "Have you experienced chest pain, palpitations, unusual shortness of breath, or discomfort?",
+        "Avez-vous ressenti des douleurs thoraciques, des palpitations, un essoufflement inhabituel ou une gêne ?",
       name: "chestPainPalpitations",
     },
     {
       id: "asthmaWheezing",
-      question: "Have you had an episode of wheezing (asthma)?",
+      question: "Avez-vous eu un épisode de respiration sifflante (asthme) ?",
       name: "asthmaWheezing",
     },
     {
       id: "lossOfConsciousness",
-      question: "Have you had a loss of consciousness?",
+      question: "Avez-vous eu une perte de connaissance ?",
       name: "lossOfConsciousness",
     },
     {
       id: "muscleJointPain",
-      question: "Have you experienced muscle or joint pain or discomfort?",
+      question: "Avez-vous ressenti des douleurs ou gênes musculaires ou articulaires ?",
       name: "muscleJointPain",
     },
     {
       id: "regularMedications",
-      question: "Do you take medications regularly?",
+      question: "Prenez-vous des médicaments régulièrement ?",
       name: "regularMedications",
     },
     {
       id: "medicalPrescription",
       question:
-        "Have you been prescribed medication or been under medical supervision?",
+        "Vous a-t-on prescrit des médicaments ou êtes-vous sous surveillance médicale ?",
       name: "medicalPrescription",
     },
     {
       id: "exerciseInducedPain",
-      question: "Have you experienced pain triggered by physical activity?",
+      question: "Avez-vous ressenti une douleur déclenchée par une activité physique ?",
       name: "exerciseInducedPain",
     },
     {
       id: "pregnancyRecentBirth",
       question:
-        "Are you pregnant or have you given birth in the last 4 months?",
+        "Êtes-vous enceinte ou avez-vous accouché au cours des 4 derniers mois ?",
       name: "pregnancyRecentBirth",
     },
   ];
@@ -410,7 +410,7 @@ function HealthSurveyContent() {
       <DashboardLayout>
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Health Survey
+            Questionnaire santé
           </h1>
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -433,20 +433,20 @@ function HealthSurveyContent() {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to Runners
+              Retour aux coureurs
             </button>
           </div>
         )}
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {isReadOnly ? `${viewingUserName}'s Health Survey` : "Health Survey"}
+            {isReadOnly ? `Questionnaire santé de ${viewingUserName}` : "Questionnaire santé"}
           </h1>
-          <p className="text-lg text-gray-600">In the last 12 months</p>
+          <p className="text-lg text-gray-600">Au cours des 12 derniers mois</p>
           <p className="text-sm text-gray-500 mt-2">
             {isReadOnly 
-              ? "Health survey information for this user (read-only view)."
-              : "Please answer all questions honestly to help us create a safe and effective training program for you."
+              ? "Informations du questionnaire santé de cet utilisateur (lecture seule)."
+              : "Veuillez répondre honnêtement à toutes les questions pour nous aider à créer un programme d&apos;entraînement sûr et efficace pour vous."
             }
           </p>
         </div>
@@ -477,11 +477,11 @@ function HealthSurveyContent() {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-green-800">
-                  Health Survey Completed
+                  Questionnaire santé complété
                 </h3>
                 <p className="text-sm text-green-700 mt-1">
-                  You have already completed this health survey. The information
-                  below is read-only and cannot be modified.
+                  Vous avez déjà complété ce questionnaire santé. Les informations
+                  ci-dessous sont en lecture seule et ne peuvent pas être modifiées.
                 </p>
               </div>
             </div>
@@ -531,7 +531,7 @@ function HealthSurveyContent() {
                             (surveyCompleted || isReadOnly) ? "text-gray-500" : "text-gray-700"
                           }`}
                         >
-                          Yes
+                          Oui
                         </span>
                       </label>
                       <label className="flex items-center">
@@ -556,7 +556,7 @@ function HealthSurveyContent() {
                             (surveyCompleted || isReadOnly) ? "text-gray-500" : "text-gray-700"
                           }`}
                         >
-                          No
+                          Non
                         </span>
                       </label>
                     </div>
@@ -569,16 +569,16 @@ function HealthSurveyContent() {
           {/* Medical Certificate Upload - Always required now */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-amber-800 mb-3">
-              Required Document
+              Document requis
             </h3>
             <p className="text-amber-700 mb-4">
-              Please upload a medical certificate or sports license attesting
-              that you can practice physical activity.
+              Veuillez télécharger un certificat médical ou une licence sportive attestant
+              que vous pouvez pratiquer une activité physique.
             </p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-amber-800 mb-2">
-                  Document Type
+                  Type de document
                 </label>
                 <select
                   id="documentType"
@@ -591,17 +591,17 @@ function HealthSurveyContent() {
                   }`}
                   required
                 >
-                  <option value="medical">Medical Certificate</option>
-                  <option value="sports">Sports License</option>
+                  <option value="medical">Certificat médical</option>
+                  <option value="sports">Licence sportive</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-amber-800 mb-2">
-                  Upload your{" "}
+                  Téléchargez votre{" "}
                   {formData.documentType === "medical"
-                    ? "medical certificate"
-                    : "sports license"}
+                    ? "certificat médical"
+                    : "licence sportive"}
                 </label>
                 <div className="flex items-center">
                   <input
@@ -618,7 +618,7 @@ function HealthSurveyContent() {
                 </div>
                 {medicalCertificate && (
                   <p className="mt-2 text-sm text-green-600">
-                    File selected: {medicalCertificate.name}
+                    Fichier sélectionné : {medicalCertificate.name}
                   </p>
                 )}
                 
@@ -644,7 +644,7 @@ function HealthSurveyContent() {
                           d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      View Medical Certificate
+                      Voir le certificat médical
                     </a>
                   </div>
                 )}
@@ -653,12 +653,12 @@ function HealthSurveyContent() {
                 {isReadOnly && !medicalCertificateUrl && (
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-700">
-                      No medical certificate has been uploaded by this user yet.
+                      Aucun certificat médical n&apos;a encore été téléchargé par cet utilisateur.
                     </p>
                   </div>
                 )}
                 <p className="mt-2 text-xs text-amber-600">
-                  Accepted formats: PDF, DOC, DOCX, JPG, JPEG, PNG (Max 10MB)
+                  Formats acceptés : PDF, DOC, DOCX, JPG, JPEG, PNG (Max 10 Mo)
                 </p>
               </div>
             </div>
@@ -682,13 +682,13 @@ function HealthSurveyContent() {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-yellow-800">
-                  Important Notice
+                  Avis important
                 </h3>
                 <p className="mt-1 text-sm text-yellow-700">
-                  A valid medical certificate or sports license is required
-                  before you can start any training program. This ensures your
-                  safety and helps us create an appropriate training plan for
-                  you.
+                  Un certificat médical ou une licence sportive valide est requis
+                  avant de pouvoir commencer tout programme d&apos;entraînement. Cela garantit votre
+                  sécurité et nous aide à créer un plan d&apos;entraînement approprié pour
+                  vous.
                 </p>
               </div>
             </div>
@@ -699,9 +699,9 @@ function HealthSurveyContent() {
             {!isReadOnly && isSubmitDisabled && !surveyCompleted && (
               <p className="text-sm text-amber-600 mb-4 text-right">
                 {!allQuestionsAnswered
-                  ? "Please answer all questions to continue."
+                  ? "Veuillez répondre à toutes les questions pour continuer."
                   : !medicalCertificate
-                  ? "Please upload a required document to submit the survey."
+                  ? "Veuillez télécharger un document requis pour soumettre le questionnaire."
                   : ""}
               </p>
             )}
@@ -711,7 +711,7 @@ function HealthSurveyContent() {
                 onClick={handleCancel}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                {isReadOnly ? "Back to Runners" : surveyCompleted ? "Back to Dashboard" : "Cancel"}
+                {isReadOnly ? "Retour aux coureurs" : surveyCompleted ? "Retour au tableau de bord" : "Annuler"}
               </button>
               {!isReadOnly && (
                 surveyCompleted ? (
@@ -733,7 +733,7 @@ function HealthSurveyContent() {
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    <span>Survey Completed</span>
+                    <span>Questionnaire complété</span>
                   </button>
                 ) : (
                   <button
@@ -748,7 +748,7 @@ function HealthSurveyContent() {
                     {saving && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     )}
-                    <span>{saving ? "Submitting..." : "Submit Survey"}</span>
+                    <span>{saving ? "Envoi en cours..." : "Soumettre le questionnaire"}</span>
                   </button>
                 )
               )}

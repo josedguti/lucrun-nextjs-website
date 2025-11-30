@@ -102,7 +102,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const adminNavigation = [
     {
-      name: "Dashboard",
+      name: "Tableau de bord",
       href: "/dashboard",
       icon: (
         <svg
@@ -127,7 +127,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: "Runners",
+      name: "Coureurs",
       href: "/dashboard/runners",
       icon: (
         <svg
@@ -146,7 +146,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: "Calendar",
+      name: "Calendrier",
       href: "/dashboard/calendar",
       icon: (
         <svg
@@ -165,7 +165,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
-      name: "Videos",
+      name: "Vidéos",
       href: "/dashboard/videos",
       icon: (
         <svg
@@ -187,7 +187,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const regularNavigation = [
     {
-      name: "Profile",
+      name: "Profil",
       href: "/dashboard/profile",
       icon: (
         <svg
@@ -207,7 +207,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       requiresApproval: false,
     },
     {
-      name: "Health Survey",
+      name: "Questionnaire santé",
       href: "/dashboard/health-survey",
       icon: (
         <svg
@@ -227,7 +227,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       requiresApproval: false,
     },
     {
-      name: "Programs",
+      name: "Programmes",
       href: "/dashboard/programs",
       icon: (
         <svg
@@ -247,7 +247,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       requiresApproval: false,
     },
     {
-      name: "Calendar",
+      name: "Calendrier",
       href: "/dashboard/calendar",
       icon: (
         <svg
@@ -267,7 +267,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       requiresApproval: true,
     },
     {
-      name: "Videos",
+      name: "Vidéos",
       href: "/dashboard/videos",
       icon: (
         <svg
@@ -383,7 +383,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   />
                 </svg>
               </button>
-              <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Tableau de bord</h1>
             </div>
           </header>
 
@@ -409,7 +409,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       d="M15 19l-7-7 7-7"
                     />
                   </svg>
-                  Back to Dashboard
+                  Retour au tableau de bord
                 </Link>
               </div>
             )}
