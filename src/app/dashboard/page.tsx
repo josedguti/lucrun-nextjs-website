@@ -73,13 +73,21 @@ function RunnerWeeklyCalendar() {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
 
+        // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
+        const formatDateLocal = (date: Date): string => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        };
+
         // Fetch sessions for the selected week
         const { data: sessions, error } = await supabase
           .from("training_sessions")
           .select("*")
           .eq("user_id", user.id)
-          .gte("session_date", weekStart.toISOString().split("T")[0])
-          .lte("session_date", weekEnd.toISOString().split("T")[0])
+          .gte("session_date", formatDateLocal(weekStart))
+          .lte("session_date", formatDateLocal(weekEnd))
           .order("session_date", { ascending: true });
 
         if (error) throw error;
@@ -162,8 +170,16 @@ function RunnerWeeklyCalendar() {
     setWeekOffset(0);
   };
 
+  // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const getSessionsForDate = (date: Date) => {
-    const dateString = date.toISOString().split("T")[0];
+    const dateString = formatDateLocal(date);
     return weekSessions.filter(
       (session) => session.session_date === dateString
     );
@@ -292,19 +308,19 @@ function RunnerWeeklyCalendar() {
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
             {[
-              "Lundi",
-              "Mardi",
-              "Mercredi",
-              "Jeudi",
-              "Vendredi",
-              "Samedi",
-              "Dimanche",
+              "Lun",
+              "Mar",
+              "Mer",
+              "Jeu",
+              "Ven",
+              "Sam",
+              "Dim",
             ].map((day) => (
               <div
                 key={day}
                 className="p-3 text-center text-sm font-medium text-gray-600"
               >
-                {day.slice(0, 3)}
+                {day}
               </div>
             ))}
           </div>
@@ -562,6 +578,14 @@ function AdminDashboard() {
   const router = useRouter();
   const supabase = createClient();
 
+  // Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
@@ -666,8 +690,8 @@ function AdminDashboard() {
             profiles(first_name, last_name, email)
           `
           )
-          .gte("session_date", currentWeekStart.toISOString().split("T")[0])
-          .lte("session_date", currentWeekEnd.toISOString().split("T")[0])
+          .gte("session_date", formatDateLocal(currentWeekStart))
+          .lte("session_date", formatDateLocal(currentWeekEnd))
           .order("session_date", { ascending: true });
 
         if (weekError) throw weekError;
@@ -683,8 +707,8 @@ function AdminDashboard() {
             profiles(first_name, last_name, email)
           `
             )
-            .gte("session_date", nextWeekStart.toISOString().split("T")[0])
-            .lte("session_date", nextWeekEnd.toISOString().split("T")[0])
+            .gte("session_date", formatDateLocal(nextWeekStart))
+            .lte("session_date", formatDateLocal(nextWeekEnd))
             .order("session_date", { ascending: true });
 
         if (nextWeekError) throw nextWeekError;
@@ -763,7 +787,7 @@ function AdminDashboard() {
 
   // Helper function to get sessions for a specific date
   const getSessionsForDate = (date: Date) => {
-    const dateString = date.toISOString().split("T")[0];
+    const dateString = formatDateLocal(date);
     return weekSessions.filter(
       (session) => session.session_date === dateString
     );
@@ -771,7 +795,7 @@ function AdminDashboard() {
 
   // Helper function to get next week sessions for a specific date
   const getNextWeekSessionsForDate = (date: Date) => {
-    const dateString = date.toISOString().split("T")[0];
+    const dateString = formatDateLocal(date);
     return nextWeekSessions.filter(
       (session) => session.session_date === dateString
     );
@@ -1028,19 +1052,19 @@ function AdminDashboard() {
             {/* Day Headers */}
             <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
               {[
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
+                "Lun",
+                "Mar",
+                "Mer",
+                "Jeu",
+                "Ven",
+                "Sam",
+                "Dim",
               ].map((day) => (
                 <div
                   key={day}
                   className="p-3 text-center text-sm font-medium text-gray-600"
                 >
-                  {day.slice(0, 3)}
+                  {day}
                 </div>
               ))}
             </div>

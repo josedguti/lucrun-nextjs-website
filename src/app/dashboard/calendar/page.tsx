@@ -15,7 +15,10 @@ interface TrainingSession {
     | "renfo"
     | "velo"
     | "combo"
-    | "personnalise";
+    | "personnalise"
+    | "marche"
+    | "course-a-pied"
+    | "seance-de-cote";
   date: string; // YYYY-MM-DD format
   time?: string;
   duration?: string;
@@ -110,6 +113,16 @@ function CalendarContent() {
     if (!dateString) return "";
     const [day, month, year] = dateString.split("-");
     return `${year}-${month}-${day}`;
+  };
+
+  // Strip HTML tags from text (for displaying HTML content in plain textareas)
+  const stripHtmlTags = (html: string | null | undefined): string => {
+    if (!html) return "";
+    // Create a temporary div element to parse HTML
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    // Get text content, which automatically strips HTML tags
+    return tmp.textContent || tmp.innerText || "";
   };
 
   // Handle date input change with DD-MM-YYYY format
@@ -391,6 +404,12 @@ function CalendarContent() {
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "personnalise":
         return "bg-gray-100 text-gray-800 border-gray-200";
+      case "marche":
+        return "bg-teal-100 text-teal-800 border-teal-200";
+      case "course-a-pied":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "seance-de-cote":
+        return "bg-pink-100 text-pink-800 border-pink-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -725,11 +744,11 @@ function CalendarContent() {
     setEditSession({
       title: session.title,
       date: formatDateForDisplay(session.date),
-      description: session.description || "",
+      description: stripHtmlTags(session.description),
       isCompleted: session.isCompleted || false,
       hasConstraints: session.hasConstraints || false,
       rpe: session.rpe || "",
-      comments: session.comments || "",
+      comments: stripHtmlTags(session.comments),
       type: session.type,
     });
     setShowSessionModal(true);
@@ -794,6 +813,9 @@ function CalendarContent() {
 
       console.log("Update successful:", data);
 
+      // Convert date from DD-MM-YYYY (form format) to YYYY-MM-DD (database format) for local state
+      const updatedDate = formatDateForStorage(editSession.date);
+
       // Update local state with the corrected title format
       setTrainingSessions((prev) =>
         prev.map((session) =>
@@ -802,7 +824,7 @@ function CalendarContent() {
                 ...session,
                 title: editSession.title, // Use the edited title (already includes runner name if admin)
                 type: editSession.type,
-                date: editSession.date,
+                date: updatedDate, // Use YYYY-MM-DD format for consistency with database
                 description: editSession.description,
                 isCompleted: editSession.isCompleted,
                 hasConstraints: editSession.hasConstraints,
@@ -999,13 +1021,6 @@ function CalendarContent() {
     }
   };
 
-  const [showEmojiPickerDescription, setShowEmojiPickerDescription] =
-    useState(false);
-  const [showEmojiPickerComments, setShowEmojiPickerComments] = useState(false);
-  const [showEditEmojiPickerDescription, setShowEditEmojiPickerDescription] =
-    useState(false);
-  const [showEditEmojiPickerComments, setShowEditEmojiPickerComments] =
-    useState(false);
 
   // Filter state for admin
   const [selectedRunnerFilter, setSelectedRunnerFilter] =
@@ -1017,6 +1032,14 @@ function CalendarContent() {
     targetRunnerId: "",
     targetDate: "",
   });
+
+  const [showEmojiPickerDescription, setShowEmojiPickerDescription] =
+    useState(false);
+  const [showEmojiPickerComments, setShowEmojiPickerComments] = useState(false);
+  const [showEditEmojiPickerDescription, setShowEditEmojiPickerDescription] =
+    useState(false);
+  const [showEditEmojiPickerComments, setShowEditEmojiPickerComments] =
+    useState(false);
 
   // Handle emoji selection for new session
   const handleEmojiClickDescription = (emojiData: { emoji: string }) => {
@@ -1051,6 +1074,7 @@ function CalendarContent() {
     });
     setShowEditEmojiPickerComments(false);
   };
+
 
   // Add helper function to get RPE background color
   const getRpeBackgroundColor = (rpe: string) => {
@@ -1272,7 +1296,7 @@ function CalendarContent() {
               <div className="grid grid-cols-7 gap-1">
                 {getDaysInMonth(currentDate).map((date, index) => {
                   if (!date) {
-                    return <div key={index} className="h-24"></div>;
+                    return <div key={index} className="min-h-32"></div>;
                   }
 
                   const sessions = getSessionsForDate(date);
@@ -1283,7 +1307,7 @@ function CalendarContent() {
                   return (
                     <div
                       key={index}
-                      className={`h-24 border rounded-lg p-1 cursor-pointer transition-colors relative group ${
+                      className={`min-h-32 border rounded-lg p-1 cursor-pointer transition-colors relative group flex flex-col ${
                         isTodayDate
                           ? "bg-blue-50 border-blue-300"
                           : isPast
@@ -1294,7 +1318,7 @@ function CalendarContent() {
                       onDrop={(e) => handleDrop(e, date)}
                       onClick={() => setSelectedDate(date)}
                     >
-                      <div className="flex justify-between items-start mb-1">
+                      <div className="flex justify-between items-start mb-1 flex-shrink-0">
                         <div
                           className={`text-sm font-medium ${
                             isTodayDate ? "text-blue-600" : isPast ? "text-gray-400" : "text-gray-900"
@@ -1328,8 +1352,8 @@ function CalendarContent() {
                         )}
                       </div>
 
-                      {/* Training Sessions - Scrollable */}
-                      <div className="space-y-1 overflow-y-auto max-h-16 scrollbar-hide">
+                      {/* Training Sessions - Dynamically sized with scroll if needed */}
+                      <div className={`space-y-1 flex-1 ${sessions.length > 4 ? 'overflow-y-auto max-h-48' : ''} scrollbar-hide`}>
                         {sessions.map((session) => (
                           <div
                             key={session.id}
@@ -1386,7 +1410,7 @@ function CalendarContent() {
                   return (
                     <div
                       key={index}
-                      className={`h-32 border rounded-lg p-2 cursor-pointer transition-colors relative group ${
+                      className={`min-h-48 border rounded-lg p-2 cursor-pointer transition-colors relative group flex flex-col ${
                         isTodayDate
                           ? "bg-blue-50 border-blue-300"
                           : isPast
@@ -1397,7 +1421,7 @@ function CalendarContent() {
                       onDrop={(e) => handleDrop(e, date)}
                       onClick={() => setSelectedDate(date)}
                     >
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex justify-between items-start mb-2 flex-shrink-0">
                         <div
                           className={`text-lg font-semibold ${
                             isTodayDate ? "text-blue-600" : isPast ? "text-gray-400" : "text-gray-900"
@@ -1431,8 +1455,8 @@ function CalendarContent() {
                         )}
                       </div>
 
-                      {/* Training Sessions - Scrollable */}
-                      <div className="space-y-1 overflow-y-auto max-h-20 scrollbar-hide">
+                      {/* Training Sessions - Dynamically sized with scroll if needed */}
+                      <div className={`space-y-1 flex-1 ${sessions.length > 5 ? 'overflow-y-auto max-h-64' : ''} scrollbar-hide`}>
                         {sessions.map((session) => (
                           <div
                             key={session.id}
@@ -1470,13 +1494,16 @@ function CalendarContent() {
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
             Types de séance
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
               { type: "fractionne", label: "Fractionné" },
               { type: "rando-trail", label: "Rando Trail" },
               { type: "renfo", label: "Renfo" },
               { type: "velo", label: "Vélo" },
               { type: "combo", label: "Combo" },
+              { type: "marche", label: "Marche" },
+              { type: "course-a-pied", label: "Course à pied" },
+              { type: "seance-de-cote", label: "Séance de côte" },
               { type: "personnalise", label: "Personnalisé" },
             ].map(({ type, label }) => (
               <div key={type} className="flex items-center gap-2">
@@ -1613,6 +1640,9 @@ function CalendarContent() {
                       <option value="renfo">Renfo</option>
                       <option value="velo">Vélo</option>
                       <option value="combo">Combo</option>
+                      <option value="marche">Marche</option>
+                      <option value="course-a-pied">Course à pied</option>
+                      <option value="seance-de-cote">Séance de côte</option>
                       <option value="personnalise">Personnalisé</option>
                     </select>
                   </div>
@@ -1938,6 +1968,9 @@ function CalendarContent() {
                       <option value="renfo">Renfo</option>
                       <option value="velo">Vélo</option>
                       <option value="combo">Combo</option>
+                      <option value="marche">Marche</option>
+                      <option value="course-a-pied">Course à pied</option>
+                      <option value="seance-de-cote">Séance de côte</option>
                       <option value="personnalise">Personnalisé</option>
                     </select>
                   </div>
@@ -2373,7 +2406,7 @@ function CalendarContent() {
                   </div>
                   {selectedSession.description && (
                     <p className="text-sm text-gray-600 mt-2">
-                      {selectedSession.description}
+                      {stripHtmlTags(selectedSession.description)}
                     </p>
                   )}
                 </div>

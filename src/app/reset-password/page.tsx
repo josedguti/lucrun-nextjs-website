@@ -18,14 +18,19 @@ export default function ResetPassword() {
   useEffect(() => {
     // Check if user has valid session from password reset link
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (error || !session) {
-        setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
+        setError(
+          "Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien."
+        );
         setValidating(false);
         return;
       }
-      
+
       setValidating(false);
     };
 
@@ -61,7 +66,7 @@ export default function ResetPassword() {
       }
 
       setSuccess(true);
-      
+
       // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push("/login");
@@ -204,7 +209,9 @@ export default function ResetPassword() {
               disabled={isLoading}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
+              {isLoading
+                ? "Réinitialisation..."
+                : "Réinitialiser le mot de passe"}
             </button>
           </form>
 
@@ -221,4 +228,3 @@ export default function ResetPassword() {
     </div>
   );
 }
-
