@@ -374,7 +374,7 @@ function RunnerWeeklyCalendar() {
         </div>
 
         {/* Quick Links */}
-        <div className="mt-8 grid md:grid-cols-3 gap-4">
+        <div className="mt-8 grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
           <Link
             href="/dashboard/calendar"
             className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
@@ -398,39 +398,6 @@ function RunnerWeeklyCalendar() {
               <div>
                 <h3 className="font-semibold text-gray-900">Calendrier complet</h3>
                 <p className="text-sm text-gray-600">Voir toutes les séances</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/videos"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-purple-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Vidéos d&apos;entraînement</h3>
-                <p className="text-sm text-gray-600">Regarder les tutoriels</p>
               </div>
             </div>
           </Link>
@@ -497,15 +464,16 @@ function RunnerWeeklyCalendar() {
                     {selectedSession.title}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    {new Date(selectedSession.session_date).toLocaleDateString(
-                      "fr-FR",
-                      {
+                    {(() => {
+                      const [year, month, day] = selectedSession.session_date.split('-').map(Number);
+                      const localDate = new Date(year, month - 1, day);
+                      return localDate.toLocaleDateString("fr-FR", {
                         weekday: "long",
                         year: "numeric",
                         month: "long",
                         day: "numeric",
-                      }
-                    )}
+                      });
+                    })()}
                   </p>
                 </div>
 
