@@ -126,18 +126,17 @@ function CalendarContent() {
   };
 
   // Handle date input change with DD-MM-YYYY format
-  const handleDateChange = (
-    value: string,
-    setter: (value: string) => void
-  ) => {
+  const handleDateChange = (value: string, setter: (value: string) => void) => {
     let formattedValue = value.replace(/[^\d-]/g, ""); // Only allow digits and hyphens
 
     // Auto-add hyphens
     if (formattedValue.length >= 2 && formattedValue.charAt(2) !== "-") {
-      formattedValue = formattedValue.slice(0, 2) + "-" + formattedValue.slice(2);
+      formattedValue =
+        formattedValue.slice(0, 2) + "-" + formattedValue.slice(2);
     }
     if (formattedValue.length >= 5 && formattedValue.charAt(5) !== "-") {
-      formattedValue = formattedValue.slice(0, 5) + "-" + formattedValue.slice(5);
+      formattedValue =
+        formattedValue.slice(0, 5) + "-" + formattedValue.slice(5);
     }
 
     // Limit length to DD-MM-YYYY format (10 characters)
@@ -393,25 +392,25 @@ function CalendarContent() {
   const getSessionColor = (type: string) => {
     switch (type) {
       case "fractionne":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-400 text-white border-red-500";
       case "rando-trail":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-pink-500 text-white border-pink-600";
       case "renfo":
-        return "bg-purple-100 text-purple-800 border-purple-200";
+        return "bg-gray-900 text-white border-black";
       case "velo":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-500 text-gray-900 border-yellow-600";
       case "combo":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-purple-600 text-white border-purple-700";
       case "personnalise":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-400 text-white border-gray-500";
       case "marche":
-        return "bg-teal-100 text-teal-800 border-teal-200";
+        return "bg-teal-600 text-white border-teal-700";
       case "course-a-pied":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-orange-800 text-white border-orange-900";
       case "seance-de-cote":
-        return "bg-pink-100 text-pink-800 border-pink-200";
+        return "bg-blue-600 text-white border-blue-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-500 text-white border-gray-600";
     }
   };
 
@@ -517,8 +516,16 @@ function CalendarContent() {
   };
 
   const isPastDate = (date: Date) => {
-    const dateWithoutTime = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const todayWithoutTime = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dateWithoutTime = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const todayWithoutTime = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
     return dateWithoutTime < todayWithoutTime;
   };
 
@@ -903,7 +910,9 @@ function CalendarContent() {
     if (selectedSession) {
       setCopySession({
         targetRunnerId: "",
-        targetDate: formatDateForDisplay(new Date().toISOString().split("T")[0]), // Default to today
+        targetDate: formatDateForDisplay(
+          new Date().toISOString().split("T")[0]
+        ), // Default to today
       });
       setShowCopySession(true);
     }
@@ -1021,7 +1030,6 @@ function CalendarContent() {
     }
   };
 
-
   // Filter state for admin
   const [selectedRunnerFilter, setSelectedRunnerFilter] =
     useState<string>("all");
@@ -1074,7 +1082,6 @@ function CalendarContent() {
     });
     setShowEditEmojiPickerComments(false);
   };
-
 
   // Add helper function to get RPE background color
   const getRpeBackgroundColor = (rpe: string) => {
@@ -1321,7 +1328,11 @@ function CalendarContent() {
                       <div className="flex justify-between items-start mb-1 flex-shrink-0">
                         <div
                           className={`text-sm font-medium ${
-                            isTodayDate ? "text-blue-600" : isPast ? "text-gray-400" : "text-gray-900"
+                            isTodayDate
+                              ? "text-blue-600"
+                              : isPast
+                              ? "text-gray-400"
+                              : "text-gray-900"
                           }`}
                         >
                           {date.getDate()}
@@ -1353,7 +1364,11 @@ function CalendarContent() {
                       </div>
 
                       {/* Training Sessions - Dynamically sized with scroll if needed */}
-                      <div className={`space-y-1 flex-1 ${sessions.length > 4 ? 'overflow-y-auto max-h-48' : ''} scrollbar-hide`}>
+                      <div
+                        className={`space-y-1 flex-1 ${
+                          sessions.length > 4 ? "overflow-y-auto max-h-48" : ""
+                        } scrollbar-hide`}
+                      >
                         {sessions.map((session) => (
                           <div
                             key={session.id}
@@ -1424,7 +1439,11 @@ function CalendarContent() {
                       <div className="flex justify-between items-start mb-2 flex-shrink-0">
                         <div
                           className={`text-lg font-semibold ${
-                            isTodayDate ? "text-blue-600" : isPast ? "text-gray-400" : "text-gray-900"
+                            isTodayDate
+                              ? "text-blue-600"
+                              : isPast
+                              ? "text-gray-400"
+                              : "text-gray-900"
                           }`}
                         >
                           {date.getDate()}
@@ -1456,7 +1475,11 @@ function CalendarContent() {
                       </div>
 
                       {/* Training Sessions - Dynamically sized with scroll if needed */}
-                      <div className={`space-y-1 flex-1 ${sessions.length > 5 ? 'overflow-y-auto max-h-64' : ''} scrollbar-hide`}>
+                      <div
+                        className={`space-y-1 flex-1 ${
+                          sessions.length > 5 ? "overflow-y-auto max-h-64" : ""
+                        } scrollbar-hide`}
+                      >
                         {sessions.map((session) => (
                           <div
                             key={session.id}
@@ -2288,11 +2311,12 @@ function CalendarContent() {
                         <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                       )}
                       <span>
-                        {saving 
-                          ? "Mise à jour..." 
-                          : (!selectedSession?.comments || selectedSession.comments.trim() === "") 
-                            ? "Valider" 
-                            : "Modifier"}
+                        {saving
+                          ? "Mise à jour..."
+                          : !selectedSession?.comments ||
+                            selectedSession.comments.trim() === ""
+                          ? "Valider"
+                          : "Modifier"}
                       </span>
                     </button>
                   </div>

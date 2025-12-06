@@ -188,19 +188,25 @@ function RunnerWeeklyCalendar() {
   const getSessionColor = (type: string) => {
     switch (type) {
       case "fractionne":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-red-500 text-white border-red-600";
       case "rando-trail":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-pink-500 text-white border-pink-600";
       case "renfo":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-gray-900 text-white border-black";
       case "velo":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-yellow-500 text-gray-900 border-yellow-600";
       case "combo":
-        return "bg-purple-100 text-purple-800 border-purple-200";
+        return "bg-purple-600 text-white border-purple-700";
       case "personnalise":
-        return "bg-indigo-100 text-indigo-800 border-indigo-200";
+        return "bg-gray-400 text-white border-gray-500";
+      case "marche":
+        return "bg-teal-600 text-white border-teal-700";
+      case "course-a-pied":
+        return "bg-orange-800 text-white border-orange-900";
+      case "seance-de-cote":
+        return "bg-blue-600 text-white border-blue-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-500 text-white border-gray-600";
     }
   };
 
@@ -307,15 +313,7 @@ function RunnerWeeklyCalendar() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
-            {[
-              "Lun",
-              "Mar",
-              "Mer",
-              "Jeu",
-              "Ven",
-              "Sam",
-              "Dim",
-            ].map((day) => (
+            {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
               <div
                 key={day}
                 className="p-3 text-center text-sm font-medium text-gray-600"
@@ -396,7 +394,9 @@ function RunnerWeeklyCalendar() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Calendrier complet</h3>
+                <h3 className="font-semibold text-gray-900">
+                  Calendrier complet
+                </h3>
                 <p className="text-sm text-gray-600">Voir toutes les séances</p>
               </div>
             </div>
@@ -465,7 +465,9 @@ function RunnerWeeklyCalendar() {
                   </h3>
                   <p className="text-sm text-gray-600">
                     {(() => {
-                      const [year, month, day] = selectedSession.session_date.split('-').map(Number);
+                      const [year, month, day] = selectedSession.session_date
+                        .split("-")
+                        .map(Number);
                       const localDate = new Date(year, month - 1, day);
                       return localDate.toLocaleDateString("fr-FR", {
                         weekday: "long",
@@ -773,19 +775,25 @@ function AdminDashboard() {
   const getSessionColor = (type: string) => {
     switch (type) {
       case "fractionne":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-red-500 text-white border-red-600";
       case "rando-trail":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-pink-500 text-white border-pink-600";
       case "renfo":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-gray-900 text-white border-black";
       case "velo":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-yellow-500 text-gray-900 border-yellow-600";
       case "combo":
-        return "bg-purple-100 text-purple-800 border-purple-200";
+        return "bg-purple-600 text-white border-purple-700";
       case "personnalise":
-        return "bg-indigo-100 text-indigo-800 border-indigo-200";
+        return "bg-gray-400 text-white border-gray-500";
+      case "marche":
+        return "bg-teal-600 text-white border-teal-700";
+      case "course-a-pied":
+        return "bg-orange-800 text-white border-orange-900";
+      case "seance-de-cote":
+        return "bg-blue-600 text-white border-blue-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-500 text-white border-gray-600";
     }
   };
 
@@ -915,7 +923,9 @@ function AdminDashboard() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Chargement du tableau de bord coach...</p>
+              <p className="text-gray-600">
+                Chargement du tableau de bord coach...
+              </p>
             </div>
           </div>
         </div>
@@ -984,13 +994,15 @@ function AdminDashboard() {
                           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      <span className="font-medium">Configuration terminée</span>
+                      <span className="font-medium">
+                        Configuration terminée
+                      </span>
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <p className="text-xs text-gray-600 mb-2">
-                      <strong>Action requise :</strong> Approuver ce coureur dans la
-                      section Coureurs
+                      <strong>Action requise :</strong> Approuver ce coureur
+                      dans la section Coureurs
                     </p>
                     <button
                       onClick={() => router.push("/dashboard/runners")}
@@ -1005,7 +1017,8 @@ function AdminDashboard() {
           ) : (
             <div className="bg-white rounded-lg shadow p-6 text-center">
               <p className="text-gray-500">
-                Aucun coureur en attente d&apos;approbation. Tout est à jour ! 🎉
+                Aucun coureur en attente d&apos;approbation. Tout est à jour !
+                🎉
               </p>
             </div>
           )}
@@ -1019,15 +1032,7 @@ function AdminDashboard() {
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {/* Day Headers */}
             <div className="grid grid-cols-7 gap-1 mb-2 p-4 pb-0">
-              {[
-                "Lun",
-                "Mar",
-                "Mer",
-                "Jeu",
-                "Ven",
-                "Sam",
-                "Dim",
-              ].map((day) => (
+              {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
                 <div
                   key={day}
                   className="p-3 text-center text-sm font-medium text-gray-600"
@@ -1092,8 +1097,8 @@ function AdminDashboard() {
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
-              Planification de la semaine prochaine ({nextWeekSessions.length} séances
-              programmées)
+              Planification de la semaine prochaine ({nextWeekSessions.length}{" "}
+              séances programmées)
             </h2>
             <Link
               href="/dashboard/calendar"
@@ -1204,7 +1209,9 @@ function AdminDashboard() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-                <p className="text-blue-700">Enregistrement des modifications...</p>
+                <p className="text-blue-700">
+                  Enregistrement des modifications...
+                </p>
               </div>
             </div>
           </div>
@@ -1501,7 +1508,8 @@ function AdminDashboard() {
                     Supprimer la séance d&apos;entraînement
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Es-tu sûr de vouloir supprimer cette séance d&apos;entraînement pour{" "}
+                    Es-tu sûr de vouloir supprimer cette séance
+                    d&apos;entraînement pour{" "}
                     <span className="font-medium">
                       {selectedSession.user_name}
                     </span>
@@ -1559,7 +1567,8 @@ function DashboardContent() {
     {
       id: "profile",
       title: "Compléter ton profil",
-      description: "Configurer tes informations personnelles et préférences de course",
+      description:
+        "Configurer tes informations personnelles et préférences de course",
       href: "/dashboard/profile",
       completed: false,
     },
@@ -1811,8 +1820,9 @@ function DashboardContent() {
               </h2>
               <p className="text-lg text-gray-600 mb-6">
                 Luc examine ton profil et tes informations de santé. Après ton
-                appel de coaching, il activera ton compte et tu auras
-                accès à ton calendrier personnalisé avec les séances d&apos;entraînement.
+                appel de coaching, il activera ton compte et tu auras accès à
+                ton calendrier personnalisé avec les séances
+                d&apos;entraînement.
               </p>
 
               <div className="mt-8">
@@ -1843,10 +1853,10 @@ function DashboardContent() {
 
               <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>Note :</strong> Ton calendrier et tes entraînements personnalisés
-                  apparaîtront ici automatiquement une fois que ton coach aura approuvé ton
-                  compte. Cela se produit généralement pendant ou peu après ton
-                  appel de coaching.
+                  <strong>Note :</strong> Ton calendrier et tes entraînements
+                  personnalisés apparaîtront ici automatiquement une fois que
+                  ton coach aura approuvé ton compte. Cela se produit
+                  généralement pendant ou peu après ton appel de coaching.
                 </p>
               </div>
             </div>
@@ -1898,8 +1908,9 @@ function DashboardContent() {
                 🎉 Bienvenue ! Tout est prêt !
               </h1>
               <p className="text-xl text-blue-100 mb-6">
-                Ton compte a été approuvé ! Tu as maintenant un accès complet à ton
-                calendrier d&apos;entraînement personnalisé et à toutes les fonctionnalités.
+                Ton compte a été approuvé ! Tu as maintenant un accès complet à
+                ton calendrier d&apos;entraînement personnalisé et à toutes les
+                fonctionnalités.
               </p>
             </div>
 
@@ -1925,8 +1936,8 @@ function DashboardContent() {
                 Ton entraînement commence maintenant !
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Ton coach a activé ton compte ! Tu peux maintenant voir et
-                gérer ton calendrier d&apos;entraînement personnalisé avec toutes tes
+                Ton coach a activé ton compte ! Tu peux maintenant voir et gérer
+                ton calendrier d&apos;entraînement personnalisé avec toutes tes
                 séances d&apos;entraînement programmées.
               </p>
 
@@ -2010,7 +2021,8 @@ function DashboardContent() {
             Pour commencer
           </h1>
           <p className="text-lg text-gray-600">
-            Complète ces étapes pour débloquer ton expérience d&apos;entraînement complète
+            Complète ces étapes pour débloquer ton expérience
+            d&apos;entraînement complète
           </p>
         </div>
 
@@ -2100,9 +2112,10 @@ function DashboardContent() {
                   🎉 Prêt pour ta séance de coaching !
                 </h2>
                 <p className="text-blue-100 mb-4">
-                  Parfait ! Tu as complété les 3 étapes de configuration. Maintenant contacte
-                  Luc via WhatsApp pour planifier ton appel de coaching personnalisé
-                  et obtenir des conseils d&apos;expert adaptés à tes objectifs.
+                  Parfait ! Tu as complété les 3 étapes de configuration.
+                  Maintenant contacte Luc via WhatsApp pour planifier ton appel
+                  de coaching personnalisé et obtenir des conseils d&apos;expert
+                  adaptés à tes objectifs.
                 </p>
                 <div className="flex items-center text-blue-100 text-sm mb-4">
                   <svg
@@ -2190,8 +2203,8 @@ function DashboardContent() {
                 Confirmer le contact avec le coach
               </h3>
               <p className="text-gray-600 mb-6">
-                As-tu réussi à contacter Luc via WhatsApp pour planifier
-                ta séance de coaching ?
+                As-tu réussi à contacter Luc via WhatsApp pour planifier ta
+                séance de coaching ?
               </p>
               <div className="flex space-x-3">
                 <button
@@ -2295,7 +2308,8 @@ function DashboardContent() {
                     </p>
                     {item.locked && (
                       <p className="text-xs text-gray-500 mt-2">
-                        Complète toutes les étapes précédentes pour débloquer cette section
+                        Complète toutes les étapes précédentes pour débloquer
+                        cette section
                       </p>
                     )}
                   </div>
@@ -2338,9 +2352,9 @@ function DashboardContent() {
               🎉 Bienvenue à l&apos;entraînement LucRun !
             </h2>
             <p className="text-lg opacity-90">
-              Tout est configuré et tu es prêt à commencer ton parcours de course.
-              N&apos;oublie pas de planifier ton appel de coaching ci-dessus et d&apos;explorer
-              ton calendrier d&apos;entraînement !
+              Tout est configuré et tu es prêt à commencer ton parcours de
+              course. N&apos;oublie pas de planifier ton appel de coaching
+              ci-dessus et d&apos;explorer ton calendrier d&apos;entraînement !
             </p>
           </div>
         )}
