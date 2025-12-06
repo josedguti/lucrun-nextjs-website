@@ -15,7 +15,7 @@
     "next": "15.4.8",
     "react": "19.1.2",
     "react-calendly": "^4.4.0",
-    "react-dom": "19.1.0",
+    "react-dom": "19.1.2",
     "resend": "^6.5.2"
   },
   "devDependencies": {
