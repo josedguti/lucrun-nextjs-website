@@ -27,6 +27,7 @@ interface TrainingSession {
   hasConstraints?: boolean;
   rpe?: string;
   comments?: string;
+  coachComments?: string;
   user_id?: string; // Add user_id for admin operations
 }
 
@@ -68,6 +69,7 @@ function CalendarContent() {
     hasConstraints: false,
     rpe: "",
     comments: "",
+    coachComments: "",
     type: "personnalise" as TrainingSession["type"],
     selectedRunnerId: "",
   });
@@ -83,6 +85,7 @@ function CalendarContent() {
     hasConstraints: false,
     rpe: "",
     comments: "",
+    coachComments: "",
     type: "personnalise" as TrainingSession["type"],
   });
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
@@ -260,6 +263,7 @@ function CalendarContent() {
             hasConstraints: session.has_constraints || false,
             rpe: session.rpe?.toString() || undefined,
             comments: session.comments || undefined,
+            coachComments: session.coach_comments || undefined,
             user_id: session.user_id, // Include user_id for admin operations
           };
         });
@@ -303,6 +307,7 @@ function CalendarContent() {
       has_constraints: session.hasConstraints || false,
       rpe: session.rpe ? parseInt(session.rpe) : null,
       comments: session.comments || null,
+      coach_comments: session.coachComments || null,
     };
   };
 
@@ -617,6 +622,7 @@ function CalendarContent() {
       hasConstraints: false,
       rpe: "",
       comments: "",
+      coachComments: "",
       type: "fractionne",
       selectedRunnerId: "",
     });
@@ -731,6 +737,7 @@ function CalendarContent() {
         hasConstraints: data.has_constraints || false,
         rpe: data.rpe?.toString() || undefined,
         comments: data.comments || undefined,
+        coachComments: data.coach_comments || undefined,
         user_id: data.user_id, // Include user_id for admin operations
       };
 
@@ -756,6 +763,7 @@ function CalendarContent() {
       hasConstraints: session.hasConstraints || false,
       rpe: session.rpe || "",
       comments: stripHtmlTags(session.comments),
+      coachComments: stripHtmlTags(session.coachComments),
       type: session.type,
     });
     setShowSessionModal(true);
@@ -837,6 +845,7 @@ function CalendarContent() {
                 hasConstraints: editSession.hasConstraints,
                 rpe: editSession.rpe,
                 comments: editSession.comments,
+                coachComments: editSession.coachComments,
               }
             : session
         )
@@ -910,9 +919,7 @@ function CalendarContent() {
     if (selectedSession) {
       setCopySession({
         targetRunnerId: "",
-        targetDate: formatDateForDisplay(
-          new Date().toISOString().split("T")[0]
-        ), // Default to today
+        targetDate: new Date().toISOString().split("T")[0], // Default to today in YYYY-MM-DD format
       });
       setShowCopySession(true);
     }
@@ -950,11 +957,12 @@ function CalendarContent() {
       setError(null);
 
       // Create session data based on the original session but for the new runner and date
+      // Note: copySession.targetDate is already in YYYY-MM-DD format from the date input
       const sessionData = sessionToDbFormat(
         {
           title: selectedSession.type, // Use the original session type as title
           type: selectedSession.type,
-          date: copySession.targetDate,
+          date: formatDateForDisplay(copySession.targetDate), // Convert YYYY-MM-DD to DD-MM-YYYY for sessionToDbFormat
           time: selectedSession.time || "08:00",
           duration: selectedSession.duration || "30 min",
           description: selectedSession.description || "",
@@ -1011,6 +1019,7 @@ function CalendarContent() {
         hasConstraints: data.has_constraints || false,
         rpe: data.rpe?.toString() || undefined,
         comments: data.comments || undefined,
+        coachComments: data.coach_comments || undefined,
         user_id: data.user_id,
       };
 
@@ -1044,10 +1053,16 @@ function CalendarContent() {
   const [showEmojiPickerDescription, setShowEmojiPickerDescription] =
     useState(false);
   const [showEmojiPickerComments, setShowEmojiPickerComments] = useState(false);
+  const [showEmojiPickerCoachComments, setShowEmojiPickerCoachComments] =
+    useState(false);
   const [showEditEmojiPickerDescription, setShowEditEmojiPickerDescription] =
     useState(false);
   const [showEditEmojiPickerComments, setShowEditEmojiPickerComments] =
     useState(false);
+  const [
+    showEditEmojiPickerCoachComments,
+    setShowEditEmojiPickerCoachComments,
+  ] = useState(false);
 
   // Handle emoji selection for new session
   const handleEmojiClickDescription = (emojiData: { emoji: string }) => {
@@ -1066,6 +1081,14 @@ function CalendarContent() {
     setShowEmojiPickerComments(false);
   };
 
+  const handleEmojiClickCoachComments = (emojiData: { emoji: string }) => {
+    setNewSession({
+      ...newSession,
+      coachComments: newSession.coachComments + emojiData.emoji,
+    });
+    setShowEmojiPickerCoachComments(false);
+  };
+
   // Handle emoji selection for edit session
   const handleEditEmojiClickDescription = (emojiData: { emoji: string }) => {
     setEditSession({
@@ -1081,6 +1104,14 @@ function CalendarContent() {
       comments: editSession.comments + emojiData.emoji,
     });
     setShowEditEmojiPickerComments(false);
+  };
+
+  const handleEditEmojiClickCoachComments = (emojiData: { emoji: string }) => {
+    setEditSession({
+      ...editSession,
+      coachComments: editSession.coachComments + emojiData.emoji,
+    });
+    setShowEditEmojiPickerCoachComments(false);
   };
 
   // Add helper function to get RPE background color
@@ -1542,7 +1573,7 @@ function CalendarContent() {
         {/* Create Session Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold text-gray-900">
                   Créer une nouvelle séance
@@ -1890,6 +1921,52 @@ function CalendarContent() {
                   )}
                 </div>
 
+                {/* Coach Comments */}
+                <div className="mb-6 relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Commentaires du Coach
+                  </label>
+                  <textarea
+                    value={newSession.coachComments}
+                    onChange={(e) =>
+                      setNewSession({
+                        ...newSession,
+                        coachComments: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
+                      currentUser?.email !== "luc.run.coach@gmail.com"
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
+                    }`}
+                  />
+                  {currentUser?.email === "luc.run.coach@gmail.com" && (
+                    <div className="flex justify-start mt-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowEmojiPickerCoachComments(
+                            !showEmojiPickerCoachComments
+                          )
+                        }
+                        className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                        aria-label="Ajouter un emoji"
+                      >
+                        <span className="text-sm mr-1">😊</span>
+                      </button>
+                    </div>
+                  )}
+                  {showEmojiPickerCoachComments && (
+                    <div className="absolute z-10 mt-1 left-0">
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiClickCoachComments}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex justify-end gap-3">
                   <button
@@ -1923,7 +2000,7 @@ function CalendarContent() {
         {/* Session Details/Edit Modal */}
         {showSessionModal && selectedSession && (
           <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold text-gray-900">
                   Modifier la séance
@@ -2247,6 +2324,52 @@ function CalendarContent() {
                   )}
                 </div>
 
+                {/* Coach Comments */}
+                <div className="mb-6 relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Commentaires du Coach
+                  </label>
+                  <textarea
+                    value={editSession.coachComments}
+                    onChange={(e) =>
+                      setEditSession({
+                        ...editSession,
+                        coachComments: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    disabled={currentUser?.email !== "luc.run.coach@gmail.com"}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 ${
+                      currentUser?.email !== "luc.run.coach@gmail.com"
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
+                    }`}
+                  />
+                  <div className="flex justify-start mt-1">
+                    {currentUser?.email === "luc.run.coach@gmail.com" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowEditEmojiPickerCoachComments(
+                            !showEditEmojiPickerCoachComments
+                          )
+                        }
+                        className="text-xs px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 flex items-center"
+                        aria-label="Ajouter un emoji"
+                      >
+                        <span className="text-sm mr-1">😊</span>
+                      </button>
+                    )}
+                  </div>
+                  {showEditEmojiPickerCoachComments && (
+                    <div className="absolute z-10 mt-1 left-0">
+                      <EmojiPicker
+                        onEmojiClick={handleEditEmojiClickCoachComments}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center">
                   <div className="flex gap-2">
@@ -2390,7 +2513,7 @@ function CalendarContent() {
         {/* Copy Session Modal */}
         {showCopySession && selectedSession && (
           <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="bg-white rounded-lg shadow-xl max-w-xl w-full">
               <div className="flex justify-between items-center p-6 border-b">
                 <h2 className="text-xl font-semibold text-gray-900">
                   Copier la séance
@@ -2477,18 +2600,14 @@ function CalendarContent() {
                     Date de la séance *
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     value={copySession.targetDate}
                     onChange={(e) =>
-                      handleDateChange(e.target.value, (value) =>
-                        setCopySession({
-                          ...copySession,
-                          targetDate: value,
-                        })
-                      )
+                      setCopySession({
+                        ...copySession,
+                        targetDate: e.target.value,
+                      })
                     }
-                    placeholder="JJ-MM-AAAA"
-                    pattern="\d{2}-\d{2}-\d{4}"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     required
                   />

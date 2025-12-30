@@ -194,6 +194,11 @@ export default function RunnersPage() {
     router.push(`/dashboard/health-survey?userId=${runner.profile.id}`);
   };
 
+  const handleViewSchedule = (runner: RunnerDetail) => {
+    // Navigate to schedule/payment page with user ID parameter
+    router.push(`/dashboard/schedule?userId=${runner.profile.id}`);
+  };
+
   const handleToggleApproval = async (runner: RunnerDetail) => {
     const newActiveStatus = !runner.profile.is_active;
 
@@ -399,24 +404,8 @@ export default function RunnersPage() {
                   </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {runner.sessionCount}
-                    </div>
-                    <div className="text-xs text-gray-500">Séances totales</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {runner.completedSessions}
-                    </div>
-                    <div className="text-xs text-gray-500">Complétées</div>
-                  </div>
-                </div>
-
                 {/* Action Buttons */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => handleViewProfile(runner)}
                     className="bg-purple-100 text-purple-800 border border-purple-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-purple-200 transition-colors duration-200 flex items-center justify-center"
@@ -473,6 +462,25 @@ export default function RunnersPage() {
                       />
                     </svg>
                     Santé
+                  </button>
+                  <button
+                    onClick={() => handleViewSchedule(runner)}
+                    className="bg-cyan-100 text-cyan-800 border border-cyan-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-cyan-200 transition-colors duration-200 flex items-center justify-center"
+                  >
+                    <svg
+                      className="w-3 h-3 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    Échéancier
                   </button>
                 </div>
 
