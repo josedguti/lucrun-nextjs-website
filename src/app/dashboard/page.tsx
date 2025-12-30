@@ -41,6 +41,7 @@ interface TrainingSession {
   has_constraints?: boolean;
   rpe?: number;
   comments?: string;
+  coach_comments?: string;
   duration_minutes?: number;
 }
 
@@ -543,6 +544,7 @@ function AdminDashboard() {
     hasConstraints: false,
     rpe: "",
     comments: "",
+    coachComments: "",
     type: "personnalise" as string,
   });
   const router = useRouter();
@@ -656,7 +658,7 @@ function AdminDashboard() {
           .select(
             `
             id, title, user_id, session_date, session_time, session_type, is_completed,
-            description, has_constraints, rpe, comments, duration_minutes,
+            description, has_constraints, rpe, comments, coach_comments, duration_minutes,
             profiles(first_name, last_name, email)
           `
           )
@@ -673,7 +675,7 @@ function AdminDashboard() {
             .select(
               `
             id, title, user_id, session_date, session_time, session_type, is_completed,
-            description, has_constraints, rpe, comments, duration_minutes,
+            description, has_constraints, rpe, comments, coach_comments, duration_minutes,
             profiles(first_name, last_name, email)
           `
             )
@@ -699,6 +701,7 @@ function AdminDashboard() {
             has_constraints: session.has_constraints as boolean,
             rpe: session.rpe as number,
             comments: session.comments as string,
+            coach_comments: session.coach_comments as string,
             duration_minutes: session.duration_minutes as number,
             user_name: (() => {
               // Handle both array and object cases for profiles
@@ -809,6 +812,7 @@ function AdminDashboard() {
       hasConstraints: session.has_constraints || false,
       rpe: session.rpe?.toString() || "",
       comments: session.comments || "",
+      coachComments: session.coach_comments || "",
       type: session.session_type,
     });
     setShowSessionModal(true);
@@ -827,12 +831,13 @@ function AdminDashboard() {
       setSaving(true);
       setError(null);
 
-      // Admin can only edit session details, not user feedback
+      // Admin can edit session details and coach comments, not user feedback
       const sessionData = {
         title: editSession.title,
         session_type: editSession.type,
         session_date: editSession.date,
         description: editSession.description || null,
+        coach_comments: editSession.coachComments || null,
         // Don't update user-only fields (is_completed, has_constraints, rpe, comments)
       };
 
@@ -857,6 +862,7 @@ function AdminDashboard() {
                 session_type: editSession.type,
                 session_date: editSession.date,
                 description: editSession.description,
+                coach_comments: editSession.coachComments,
                 // Keep existing user feedback fields unchanged
               }
             : session
@@ -1442,6 +1448,25 @@ function AdminDashboard() {
                   />
                 </div>
 
+                {/* Coach Comments - Editable by Admin */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Commentaires du Coach
+                  </label>
+                  <textarea
+                    value={editSession.coachComments}
+                    onChange={(e) =>
+                      setEditSession({
+                        ...editSession,
+                        coachComments: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="Ajouter des commentaires pour le coureur"
+                  />
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex justify-between">
                   <button
@@ -1453,7 +1478,7 @@ function AdminDashboard() {
                     {saving && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
                     )}
-                    <span>{saving ? "Deleting..." : "Delete"}</span>
+                    <span>{saving ? "Suppression..." : "Supprimer"}</span>
                   </button>
 
                   <div className="flex gap-3">
