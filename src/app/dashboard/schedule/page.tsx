@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -36,6 +36,7 @@ function ScheduleContent() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const textareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
 
   const months = [
     "Janvier",
@@ -153,6 +154,122 @@ function ScheduleContent() {
     return record?.is_paid || false;
   };
 
+  const getPaymentRecord = (userId: string, month: number): PaymentRecord | undefined => {
+    const monthNumber = month + 1; // Convert from 0-indexed to 1-indexed
+    return paymentRecords.find(
+      (p) => p.user_id === userId && p.month === monthNumber
+    );
+  };
+
+  const handleNotesUpdate = async (
+    userId: string,
+    month: number,
+    notes: string
+  ) => {
+    try {
+      setSaving(true);
+      const monthNumber = month + 1; // Convert from 0-indexed to 1-indexed
+      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setSaving(false);
+        return;
+      }
+
+      const notesTrimmed = notes.trim() || null;
+
+      // First, try to find existing record in database (not just in local state)
+      const { data: existingRecordData, error: fetchError } = await supabase
+        .from("payment_records")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("year", currentYear)
+        .eq("month", monthNumber)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error("Error fetching payment record:", fetchError);
+        alert("Erreur lors de la récupération de l'enregistrement");
+        setSaving(false);
+        return;
+      }
+
+      if (existingRecordData) {
+        // Update existing record
+        // Check if notes actually changed
+        if (existingRecordData.notes === notesTrimmed) {
+          // No change, skip save
+          setSaving(false);
+          return;
+        }
+
+        const { error: updateError } = await supabase
+          .from("payment_records")
+          .update({
+            notes: notesTrimmed,
+            updated_by: user.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingRecordData.id);
+
+        if (updateError) {
+          console.error("Error updating notes:", updateError);
+          alert("Erreur lors de la mise à jour des notes");
+          setSaving(false);
+          return;
+        }
+
+        // Update local state
+        setPaymentRecords((prev) => {
+          const filtered = prev.filter((p) => !(p.id?.startsWith("temp-") && p.user_id === userId && p.month === monthNumber));
+          return filtered.map((p) =>
+            p.id === existingRecordData.id
+              ? { ...p, notes: notesTrimmed }
+              : p
+          );
+        });
+      } else {
+        // Record doesn't exist, create it
+        // Check if payment is marked as paid
+        const isPaid = getPaymentStatus(userId, month);
+        
+        const { data: newRecord, error: insertError } = await supabase
+          .from("payment_records")
+          .insert({
+            user_id: userId,
+            year: currentYear,
+            month: monthNumber,
+            is_paid: isPaid,
+            payment_date: isPaid ? new Date().toISOString().split("T")[0] : null,
+            notes: notesTrimmed,
+            updated_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Error creating payment record with notes:", insertError);
+          alert("Erreur lors de la création de l'enregistrement");
+          setSaving(false);
+          return;
+        }
+
+        // Update local state (remove temp record if exists, add real one)
+        setPaymentRecords((prev) => {
+          const filtered = prev.filter((p) => !(p.id?.startsWith("temp-") && p.user_id === userId && p.month === monthNumber));
+          return [...filtered, newRecord];
+        });
+      }
+    } catch (error) {
+      console.error("Error updating notes:", error);
+      alert("Une erreur est survenue");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handlePaymentToggle = async (userId: string, month: number) => {
     try {
       setSaving(true);
@@ -170,7 +287,7 @@ function ScheduleContent() {
       if (!user) return;
 
       if (existingRecord) {
-        // Update existing record
+        // Update existing record (preserve notes)
         const { error } = await supabase
           .from("payment_records")
           .update({
@@ -180,6 +297,8 @@ function ScheduleContent() {
               : null,
             updated_by: user.id,
             updated_at: new Date().toISOString(),
+            // Preserve existing notes
+            notes: existingRecord.notes || null,
           })
           .eq("id", existingRecord.id);
 
@@ -214,6 +333,7 @@ function ScheduleContent() {
             is_paid: true,
             payment_date: new Date().toISOString().split("T")[0],
             updated_by: user.id,
+            notes: null,
           })
           .select()
           .single();
@@ -349,29 +469,161 @@ function ScheduleContent() {
             <tbody className="bg-white divide-y divide-gray-200">
               {displayedRunners.map((runner) => (
                 <tr key={runner.id} className="hover:bg-gray-50">
-                  <td className="sticky left-0 bg-white px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
+                  <td className="sticky left-0 bg-white px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 align-top">
                     {getRunnerName(runner)}
                   </td>
-                  {months.map((_, monthIndex) => (
-                    <td
-                      key={monthIndex}
-                      className="px-4 py-4 whitespace-nowrap text-center"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={getPaymentStatus(runner.id, monthIndex)}
-                        onChange={() =>
-                          handlePaymentToggle(runner.id, monthIndex)
-                        }
-                        disabled={saving || !isAdmin}
-                        className={`w-5 h-5 rounded focus:ring-green-500 ${
-                          isAdmin
-                            ? "text-green-600 border-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            : "text-gray-600 border-gray-500 cursor-not-allowed opacity-100"
-                        }`}
-                      />
-                    </td>
-                  ))}
+                  {months.map((_, monthIndex) => {
+                    const paymentRecord = getPaymentRecord(runner.id, monthIndex);
+                    const currentNotes = paymentRecord?.notes || "";
+                    const textareaKey = `${runner.id}-${monthIndex}`;
+                    return (
+                      <td
+                        key={monthIndex}
+                        className="px-4 py-4 text-center align-top"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={getPaymentStatus(runner.id, monthIndex)}
+                            onChange={() =>
+                              handlePaymentToggle(runner.id, monthIndex)
+                            }
+                            disabled={saving || !isAdmin}
+                            className={`w-5 h-5 rounded focus:ring-green-500 ${
+                              isAdmin
+                                ? "text-green-600 border-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                : "text-gray-600 border-gray-500 cursor-not-allowed opacity-100"
+                            }`}
+                          />
+                          {isAdmin && getPaymentStatus(runner.id, monthIndex) && (
+                            <div className="w-[120px] flex flex-col gap-1">
+                              <textarea
+                                ref={(el) => {
+                                  if (el) {
+                                    textareaRefs.current.set(textareaKey, el);
+                                  } else {
+                                    textareaRefs.current.delete(textareaKey);
+                                  }
+                                }}
+                                value={currentNotes}
+                                onChange={(e) => {
+                                  // Optimistic update for better UX
+                                  const monthNumber = monthIndex + 1;
+                                  const existingRecord = paymentRecords.find(
+                                    (p) =>
+                                      p.user_id === runner.id &&
+                                      p.month === monthNumber &&
+                                      !p.id?.startsWith("temp-")
+                                  );
+                                  if (existingRecord) {
+                                    setPaymentRecords((prev) =>
+                                      prev.map((p) =>
+                                        p.id === existingRecord.id
+                                          ? { ...p, notes: e.target.value }
+                                          : p
+                                      )
+                                    );
+                                  } else {
+                                    // If no record exists yet, create a temporary one for optimistic update
+                                    // This can happen if user just checked the box
+                                    const tempRecord: PaymentRecord = {
+                                      id: `temp-${runner.id}-${monthNumber}`,
+                                      user_id: runner.id,
+                                      year: currentYear,
+                                      month: monthNumber,
+                                      is_paid: true,
+                                      notes: e.target.value,
+                                    };
+                                    setPaymentRecords((prev) => {
+                                      // Remove any existing temp record first
+                                      const filtered = prev.filter(
+                                        (p) => !(p.id?.startsWith("temp-") && p.user_id === runner.id && p.month === monthNumber)
+                                      );
+                                      return [...filtered, tempRecord];
+                                    });
+                                  }
+                                }}
+                                placeholder="Ajouter des notes..."
+                                disabled={saving}
+                                rows={2}
+                                className="w-full h-[50px] text-xs text-gray-900 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+                                title="Ajouter des notes pour cette période (ex: Dec 12 à Jan 12)"
+                              />
+                              <button
+                                onClick={() => {
+                                  const textarea = textareaRefs.current.get(textareaKey);
+                                  const notesToSave = textarea?.value || currentNotes;
+                                  handleNotesUpdate(
+                                    runner.id,
+                                    monthIndex,
+                                    notesToSave
+                                  );
+                                }}
+                                disabled={saving}
+                                className="w-full text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                                title="Enregistrer les notes"
+                              >
+                                {saving ? (
+                                  <>
+                                    <svg
+                                      className="animate-spin h-3 w-3"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                      ></circle>
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      ></path>
+                                    </svg>
+                                    <span>Enregistrement...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg
+                                      className="w-3 h-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                    <span>{currentNotes.trim() ? "Modifier" : "Enregistrer"}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                          {!isAdmin && paymentRecord?.notes && (
+                            <div className="w-full max-w-[120px] mt-1">
+                              <div
+                                className="text-xs text-gray-600 italic px-2 py-1 bg-gray-50 rounded border border-gray-200"
+                                title={paymentRecord.notes}
+                              >
+                                {paymentRecord.notes.length > 20
+                                  ? `${paymentRecord.notes.substring(0, 20)}...`
+                                  : paymentRecord.notes}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
