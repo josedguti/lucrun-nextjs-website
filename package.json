@@ -12,7 +12,7 @@
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.51.0",
     "emoji-picker-react": "^4.13.2",
-    "next": "15.4.8",
+    "next": "15.4.10",
     "react": "19.1.2",
     "react-calendly": "^4.4.0",
     "react-dom": "19.1.2",
