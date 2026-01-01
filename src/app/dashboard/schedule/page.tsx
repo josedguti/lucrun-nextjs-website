@@ -154,7 +154,10 @@ function ScheduleContent() {
     return record?.is_paid || false;
   };
 
-  const getPaymentRecord = (userId: string, month: number): PaymentRecord | undefined => {
+  const getPaymentRecord = (
+    userId: string,
+    month: number
+  ): PaymentRecord | undefined => {
     const monthNumber = month + 1; // Convert from 0-indexed to 1-indexed
     return paymentRecords.find(
       (p) => p.user_id === userId && p.month === monthNumber
@@ -169,7 +172,7 @@ function ScheduleContent() {
     try {
       setSaving(true);
       const monthNumber = month + 1; // Convert from 0-indexed to 1-indexed
-      
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -223,18 +226,23 @@ function ScheduleContent() {
 
         // Update local state
         setPaymentRecords((prev) => {
-          const filtered = prev.filter((p) => !(p.id?.startsWith("temp-") && p.user_id === userId && p.month === monthNumber));
+          const filtered = prev.filter(
+            (p) =>
+              !(
+                p.id?.startsWith("temp-") &&
+                p.user_id === userId &&
+                p.month === monthNumber
+              )
+          );
           return filtered.map((p) =>
-            p.id === existingRecordData.id
-              ? { ...p, notes: notesTrimmed }
-              : p
+            p.id === existingRecordData.id ? { ...p, notes: notesTrimmed } : p
           );
         });
       } else {
         // Record doesn't exist, create it
         // Check if payment is marked as paid
         const isPaid = getPaymentStatus(userId, month);
-        
+
         const { data: newRecord, error: insertError } = await supabase
           .from("payment_records")
           .insert({
@@ -242,7 +250,9 @@ function ScheduleContent() {
             year: currentYear,
             month: monthNumber,
             is_paid: isPaid,
-            payment_date: isPaid ? new Date().toISOString().split("T")[0] : null,
+            payment_date: isPaid
+              ? new Date().toISOString().split("T")[0]
+              : null,
             notes: notesTrimmed,
             updated_by: user.id,
           })
@@ -250,7 +260,10 @@ function ScheduleContent() {
           .single();
 
         if (insertError) {
-          console.error("Error creating payment record with notes:", insertError);
+          console.error(
+            "Error creating payment record with notes:",
+            insertError
+          );
           alert("Erreur lors de la création de l'enregistrement");
           setSaving(false);
           return;
@@ -258,7 +271,14 @@ function ScheduleContent() {
 
         // Update local state (remove temp record if exists, add real one)
         setPaymentRecords((prev) => {
-          const filtered = prev.filter((p) => !(p.id?.startsWith("temp-") && p.user_id === userId && p.month === monthNumber));
+          const filtered = prev.filter(
+            (p) =>
+              !(
+                p.id?.startsWith("temp-") &&
+                p.user_id === userId &&
+                p.month === monthNumber
+              )
+          );
           return [...filtered, newRecord];
         });
       }
@@ -473,7 +493,10 @@ function ScheduleContent() {
                     {getRunnerName(runner)}
                   </td>
                   {months.map((_, monthIndex) => {
-                    const paymentRecord = getPaymentRecord(runner.id, monthIndex);
+                    const paymentRecord = getPaymentRecord(
+                      runner.id,
+                      monthIndex
+                    );
                     const currentNotes = paymentRecord?.notes || "";
                     const textareaKey = `${runner.id}-${monthIndex}`;
                     return (
@@ -495,7 +518,7 @@ function ScheduleContent() {
                                 : "text-gray-600 border-gray-500 cursor-not-allowed opacity-100"
                             }`}
                           />
-                          {isAdmin && getPaymentStatus(runner.id, monthIndex) && (
+                          {isAdmin && (
                             <div className="w-[120px] flex flex-col gap-1">
                               <textarea
                                 ref={(el) => {
@@ -525,19 +548,27 @@ function ScheduleContent() {
                                     );
                                   } else {
                                     // If no record exists yet, create a temporary one for optimistic update
-                                    // This can happen if user just checked the box
+                                    // Use current checkbox state, don't force it to true
                                     const tempRecord: PaymentRecord = {
                                       id: `temp-${runner.id}-${monthNumber}`,
                                       user_id: runner.id,
                                       year: currentYear,
                                       month: monthNumber,
-                                      is_paid: true,
+                                      is_paid: getPaymentStatus(
+                                        runner.id,
+                                        monthIndex
+                                      ),
                                       notes: e.target.value,
                                     };
                                     setPaymentRecords((prev) => {
                                       // Remove any existing temp record first
                                       const filtered = prev.filter(
-                                        (p) => !(p.id?.startsWith("temp-") && p.user_id === runner.id && p.month === monthNumber)
+                                        (p) =>
+                                          !(
+                                            p.id?.startsWith("temp-") &&
+                                            p.user_id === runner.id &&
+                                            p.month === monthNumber
+                                          )
                                       );
                                       return [...filtered, tempRecord];
                                     });
@@ -551,8 +582,10 @@ function ScheduleContent() {
                               />
                               <button
                                 onClick={() => {
-                                  const textarea = textareaRefs.current.get(textareaKey);
-                                  const notesToSave = textarea?.value || currentNotes;
+                                  const textarea =
+                                    textareaRefs.current.get(textareaKey);
+                                  const notesToSave =
+                                    textarea?.value || currentNotes;
                                   handleNotesUpdate(
                                     runner.id,
                                     monthIndex,
@@ -602,7 +635,7 @@ function ScheduleContent() {
                                         d="M5 13l4 4L19 7"
                                       />
                                     </svg>
-                                    <span>{currentNotes.trim() ? "Modifier" : "Enregistrer"}</span>
+                                    <span>Enregistrer</span>
                                   </>
                                 )}
                               </button>
@@ -680,7 +713,9 @@ export default function SchedulePage() {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Chargement de l&apos;échéancier...</p>
+                <p className="text-gray-600">
+                  Chargement de l&apos;échéancier...
+                </p>
               </div>
             </div>
           </div>
