@@ -18,7 +18,8 @@ interface TrainingSession {
     | "personnalise"
     | "marche"
     | "course-a-pied"
-    | "seance-de-cote";
+    | "seance-de-cote"
+    | "competition";
   date: string; // YYYY-MM-DD format
   time?: string;
   duration?: string;
@@ -414,6 +415,8 @@ function CalendarContent() {
         return "bg-orange-800 text-white border-orange-900";
       case "seance-de-cote":
         return "bg-blue-600 text-white border-blue-700";
+      case "competition":
+        return "bg-green-600 text-white border-green-700";
       default:
         return "bg-gray-500 text-white border-gray-600";
     }
@@ -1558,6 +1561,7 @@ function CalendarContent() {
               { type: "marche", label: "Marche" },
               { type: "course-a-pied", label: "Course à pied" },
               { type: "seance-de-cote", label: "Séance de côte" },
+              { type: "competition", label: "Compétition" },
               { type: "personnalise", label: "Personnalisé" },
             ].map(({ type, label }) => (
               <div key={type} className="flex items-center gap-2">
@@ -1697,6 +1701,7 @@ function CalendarContent() {
                       <option value="marche">Marche</option>
                       <option value="course-a-pied">Course à pied</option>
                       <option value="seance-de-cote">Séance de côte</option>
+                      <option value="competition">Compétition</option>
                       <option value="personnalise">Personnalisé</option>
                     </select>
                   </div>
@@ -2071,6 +2076,7 @@ function CalendarContent() {
                       <option value="marche">Marche</option>
                       <option value="course-a-pied">Course à pied</option>
                       <option value="seance-de-cote">Séance de côte</option>
+                      <option value="competition">Compétition</option>
                       <option value="personnalise">Personnalisé</option>
                     </select>
                   </div>

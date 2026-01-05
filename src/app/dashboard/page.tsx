@@ -206,6 +206,8 @@ function RunnerWeeklyCalendar() {
         return "bg-orange-800 text-white border-orange-900";
       case "seance-de-cote":
         return "bg-blue-600 text-white border-blue-700";
+      case "competition":
+        return "bg-green-600 text-white border-green-700";
       default:
         return "bg-gray-500 text-white border-gray-600";
     }
@@ -795,6 +797,8 @@ function AdminDashboard() {
         return "bg-orange-800 text-white border-orange-900";
       case "seance-de-cote":
         return "bg-blue-600 text-white border-blue-700";
+      case "competition":
+        return "bg-green-600 text-white border-green-700";
       default:
         return "bg-gray-500 text-white border-gray-600";
     }
@@ -1279,6 +1283,10 @@ function AdminDashboard() {
                       <option value="renfo">Renfo</option>
                       <option value="velo">Vélo</option>
                       <option value="combo">Combo</option>
+                      <option value="marche">Marche</option>
+                      <option value="course-a-pied">Course à pied</option>
+                      <option value="seance-de-cote">Séance de côte</option>
+                      <option value="competition">Compétition</option>
                       <option value="personnalise">Personnalisé</option>
                     </select>
                   </div>
@@ -1606,9 +1614,9 @@ function DashboardContent() {
     },
     {
       id: "programs",
-      title: "Choisir un programme d&apos;entraînement",
+      title: "Choisir un programme d'entraînement",
       description:
-        "Sélectionner et s&apos;inscrire à un programme d&apos;entraînement adapté à tes objectifs",
+        "Sélectionner et s'inscrire à un programme d'entraînement adapté à tes objectifs",
       href: "/dashboard/programs",
       completed: false,
     },
