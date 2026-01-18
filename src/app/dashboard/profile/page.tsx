@@ -4,15 +4,17 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [, setViewingUserId] = useState<string | null>(null);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [viewingUserName, setViewingUserName] = useState<string>("");
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,6 +43,7 @@ function ProfileContent() {
     height: "",
     weight: "",
     bodyFatPercentage: "",
+    vo2Max: "",
     // Running Information
     trainingHoursPerWeek: "",
     runningLevel: "",
@@ -133,7 +136,8 @@ function ProfileContent() {
         const isViewingOtherUser = userIdParam && userIdParam !== user.id;
 
         setViewingUserId(targetUserId);
-        setIsReadOnly(!!isViewingOtherUser);
+        // Admins can edit other users' profiles, regular users cannot
+        setIsReadOnly(isViewingOtherUser && !isAdmin);
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
@@ -197,6 +201,7 @@ function ProfileContent() {
             height: profile.height || "",
             weight: profile.weight || "",
             bodyFatPercentage: profile.body_fat_percentage || "",
+            vo2Max: profile.vo2_max || "",
             trainingHoursPerWeek: profile.training_hours_per_week || "",
             runningLevel: profile.running_level || "",
             currentWeeklyKm: profile.current_weekly_km || "",
@@ -214,7 +219,7 @@ function ProfileContent() {
     }
 
     loadProfile();
-  }, [router, supabase, searchParams]);
+  }, [router, supabase, searchParams, isAdmin]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -354,6 +359,7 @@ function ProfileContent() {
         height: formData.height || null,
         weight: formData.weight || null,
         body_fat_percentage: formData.bodyFatPercentage || null,
+        vo2_max: formData.vo2Max || null,
         training_hours_per_week: formData.trainingHoursPerWeek.trim(),
         running_level: formData.runningLevel.trim(),
         current_weekly_km: formData.currentWeeklyKm.trim(),
@@ -373,10 +379,13 @@ function ProfileContent() {
       // Save profile data to Supabase
       console.log("Attempting to save profile data:", profileData);
 
+      // Use viewingUserId if admin is editing another user's profile, otherwise use current user's ID
+      const targetUserId = viewingUserId || user.id;
+
       const { data: profileResult, error: profileError } = await supabase
         .from("profiles")
         .upsert({
-          id: user.id,
+          id: targetUserId,
           ...profileData,
         });
 
@@ -393,7 +402,7 @@ function ProfileContent() {
         const { error: progressError } = await supabase
           .from("dashboard_progress")
           .upsert({
-            user_id: user.id,
+            user_id: targetUserId,
             profile_completed: true,
           });
 
@@ -410,7 +419,12 @@ function ProfileContent() {
       console.log("Profile completed and saved:", profileData);
 
       // Redirect to dashboard with success indication
-      router.push("/dashboard?success=profile");
+      // If admin is editing another user's profile, go back to runners page
+      if (isAdmin && viewingUserId && viewingUserId !== user.id) {
+        router.push("/dashboard/runners?success=profile");
+      } else {
+        router.push("/dashboard?success=profile");
+      }
     } catch (err) {
       console.error("Error saving profile:", err);
 
@@ -475,6 +489,7 @@ function ProfileContent() {
       height: "",
       weight: "",
       bodyFatPercentage: "",
+      vo2Max: "",
       // Running Information
       trainingHoursPerWeek: "",
       runningLevel: "",
@@ -1302,7 +1317,7 @@ function ProfileContent() {
                   </div>
                 </div>
 
-                {/* Second row: Body Fat Percentage */}
+                {/* Second row: Body Fat Percentage and VO2 Max */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label
@@ -1320,11 +1335,38 @@ function ProfileContent() {
                       step="0.1"
                       value={formData.bodyFatPercentage}
                       onChange={handleInputChange}
-                      readOnly={isReadOnly}
+                      readOnly={!isAdmin}
                       className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
-                        isReadOnly ? "bg-gray-50 cursor-not-allowed" : ""
+                        !isAdmin ? "bg-gray-50 cursor-not-allowed" : ""
                       }`}
                       placeholder="ex : 15.5"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      mesure faite par le coach
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="vo2Max"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      VO2 Max
+                    </label>
+                    <input
+                      type="number"
+                      id="vo2Max"
+                      name="vo2Max"
+                      min="1"
+                      max="100"
+                      step="0.1"
+                      value={formData.vo2Max}
+                      onChange={handleInputChange}
+                      readOnly={!isAdmin}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                        !isAdmin ? "bg-gray-50 cursor-not-allowed" : ""
+                      }`}
+                      placeholder="ex : 45.5"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       mesure faite par le coach
