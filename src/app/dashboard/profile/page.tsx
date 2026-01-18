@@ -133,7 +133,7 @@ function ProfileContent() {
         // Check if we're viewing another user's profile
         const userIdParam = searchParams.get("userId");
         const targetUserId = userIdParam || user.id;
-        const isViewingOtherUser = userIdParam && userIdParam !== user.id;
+        const isViewingOtherUser = !!(userIdParam && userIdParam !== user.id);
 
         setViewingUserId(targetUserId);
         // Admins can edit other users' profiles, regular users cannot
