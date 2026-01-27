@@ -66,8 +66,8 @@ function CalendarContent() {
     title: "",
     date: "",
     description: "",
-    isCompleted: false,
-    hasConstraints: false,
+    isCompleted: undefined as boolean | undefined,
+    hasConstraints: undefined as boolean | undefined,
     rpe: "",
     comments: "",
     coachComments: "",
@@ -82,8 +82,8 @@ function CalendarContent() {
     title: "",
     date: "",
     description: "",
-    isCompleted: false,
-    hasConstraints: false,
+    isCompleted: undefined as boolean | undefined,
+    hasConstraints: undefined as boolean | undefined,
     rpe: "",
     comments: "",
     coachComments: "",
@@ -260,8 +260,8 @@ function CalendarContent() {
               ? `${session.duration_minutes} min`
               : undefined,
             description: session.description || undefined,
-            isCompleted: session.is_completed || false,
-            hasConstraints: session.has_constraints || false,
+            isCompleted: session.is_completed ?? undefined,
+            hasConstraints: session.has_constraints ?? undefined,
             rpe: session.rpe?.toString() || undefined,
             comments: session.comments || undefined,
             coachComments: session.coach_comments || undefined,
@@ -304,8 +304,8 @@ function CalendarContent() {
         ? parseInt(session.duration.replace(" min", ""))
         : null,
       description: session.description || null,
-      is_completed: session.isCompleted || false,
-      has_constraints: session.hasConstraints || false,
+      is_completed: session.isCompleted ?? null,
+      has_constraints: session.hasConstraints ?? null,
       rpe: session.rpe ? parseInt(session.rpe) : null,
       comments: session.comments || null,
       coach_comments: session.coachComments || null,
@@ -621,8 +621,8 @@ function CalendarContent() {
       title: "",
       date: formatDateForDisplay(date.toISOString().split("T")[0]),
       description: "",
-      isCompleted: false,
-      hasConstraints: false,
+      isCompleted: undefined,
+      hasConstraints: undefined,
       rpe: "",
       comments: "",
       coachComments: "",
@@ -736,8 +736,8 @@ function CalendarContent() {
           ? `${data.duration_minutes} min`
           : undefined,
         description: data.description || undefined,
-        isCompleted: data.is_completed || false,
-        hasConstraints: data.has_constraints || false,
+        isCompleted: data.is_completed ?? undefined,
+        hasConstraints: data.has_constraints ?? undefined,
         rpe: data.rpe?.toString() || undefined,
         comments: data.comments || undefined,
         coachComments: data.coach_comments || undefined,
@@ -762,8 +762,8 @@ function CalendarContent() {
       title: session.title,
       date: formatDateForDisplay(session.date),
       description: stripHtmlTags(session.description),
-      isCompleted: session.isCompleted || false,
-      hasConstraints: session.hasConstraints || false,
+      isCompleted: session.isCompleted ?? undefined,
+      hasConstraints: session.hasConstraints ?? undefined,
       rpe: session.rpe || "",
       comments: stripHtmlTags(session.comments),
       coachComments: stripHtmlTags(session.coachComments),
@@ -969,8 +969,8 @@ function CalendarContent() {
           time: selectedSession.time || "08:00",
           duration: selectedSession.duration || "30 min",
           description: selectedSession.description || "",
-          isCompleted: false, // New session should start as not completed
-          hasConstraints: false, // Reset constraints for new session
+          isCompleted: undefined, // No default selection for new session
+          hasConstraints: undefined, // No default selection for new session
           rpe: "", // Reset RPE for new session
           comments: "", // Reset comments for new session
         },
@@ -1018,8 +1018,8 @@ function CalendarContent() {
           ? `${data.duration_minutes} min`
           : undefined,
         description: data.description || undefined,
-        isCompleted: data.is_completed || false,
-        hasConstraints: data.has_constraints || false,
+        isCompleted: data.is_completed ?? undefined,
+        hasConstraints: data.has_constraints ?? undefined,
         rpe: data.rpe?.toString() || undefined,
         comments: data.comments || undefined,
         coachComments: data.coach_comments || undefined,
@@ -1774,7 +1774,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="completed"
-                          checked={newSession.isCompleted}
+                          checked={newSession.isCompleted === true}
                           onChange={() =>
                             setNewSession({ ...newSession, isCompleted: true })
                           }
@@ -1789,7 +1789,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="completed"
-                          checked={!newSession.isCompleted}
+                          checked={newSession.isCompleted === false}
                           onChange={() =>
                             setNewSession({ ...newSession, isCompleted: false })
                           }
@@ -1813,7 +1813,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="constraints"
-                          checked={newSession.hasConstraints}
+                          checked={newSession.hasConstraints === true}
                           onChange={() =>
                             setNewSession({
                               ...newSession,
@@ -1831,7 +1831,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="constraints"
-                          checked={!newSession.hasConstraints}
+                          checked={newSession.hasConstraints === false}
                           onChange={() =>
                             setNewSession({
                               ...newSession,
@@ -2165,7 +2165,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="editCompleted"
-                          checked={editSession.isCompleted}
+                          checked={editSession.isCompleted === true}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
@@ -2183,7 +2183,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="editCompleted"
-                          checked={!editSession.isCompleted}
+                          checked={editSession.isCompleted === false}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
@@ -2210,7 +2210,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="editConstraints"
-                          checked={editSession.hasConstraints}
+                          checked={editSession.hasConstraints === true}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
@@ -2228,7 +2228,7 @@ function CalendarContent() {
                         <input
                           type="radio"
                           name="editConstraints"
-                          checked={!editSession.hasConstraints}
+                          checked={editSession.hasConstraints === false}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
