@@ -101,9 +101,17 @@ function CalendarContent() {
     []
   );
 
+  // Format Date object to YYYY-MM-DD using local timezone (no UTC conversion)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const today = new Date();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const todayString = today.toISOString().split("T")[0];
+  const todayString = formatDateLocal(today);
 
   // Format date from YYYY-MM-DD to DD-MM-YYYY for display
   const formatDateForDisplay = (dateString: string): string => {
@@ -376,7 +384,7 @@ function CalendarContent() {
 
   // Get sessions for a specific date (with optional runner filter)
   const getSessionsForDate = (date: Date) => {
-    const dateString = date.toISOString().split("T")[0];
+    const dateString = formatDateLocal(date);
     let filteredSessions = trainingSessions.filter(
       (session) => session.date === dateString
     );
@@ -449,7 +457,7 @@ function CalendarContent() {
         return;
       }
 
-      const newDateString = targetDate.toISOString().split("T")[0];
+      const newDateString = formatDateLocal(targetDate);
 
       try {
         setSaving(true);
@@ -569,7 +577,7 @@ function CalendarContent() {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getSessionsForDateTime = (date: Date, timeSlot: string) => {
-    const dateString = date.toISOString().split("T")[0];
+    const dateString = formatDateLocal(date);
     return trainingSessions.filter((session) => {
       if (session.date !== dateString || !session.time) return false;
       const sessionHour = parseInt(session.time.split(":")[0]);
@@ -619,7 +627,7 @@ function CalendarContent() {
     setCreateModalDate(date);
     setNewSession({
       title: "",
-      date: formatDateForDisplay(date.toISOString().split("T")[0]),
+      date: formatDateForDisplay(formatDateLocal(date)),
       description: "",
       isCompleted: undefined,
       hasConstraints: undefined,
@@ -922,7 +930,7 @@ function CalendarContent() {
     if (selectedSession) {
       setCopySession({
         targetRunnerId: "",
-        targetDate: new Date().toISOString().split("T")[0], // Default to today in YYYY-MM-DD format
+        targetDate: formatDateLocal(new Date()), // Default to today in YYYY-MM-DD format
       });
       setShowCopySession(true);
     }

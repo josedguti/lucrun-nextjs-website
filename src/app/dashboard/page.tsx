@@ -542,8 +542,8 @@ function AdminDashboard() {
     title: "",
     date: "",
     description: "",
-    isCompleted: false,
-    hasConstraints: false,
+    isCompleted: undefined as boolean | undefined,
+    hasConstraints: undefined as boolean | undefined,
     rpe: "",
     comments: "",
     coachComments: "",
@@ -812,8 +812,8 @@ function AdminDashboard() {
       title: session.title,
       date: session.session_date,
       description: session.description || "",
-      isCompleted: session.is_completed || false,
-      hasConstraints: session.has_constraints || false,
+      isCompleted: session.is_completed ?? undefined,
+      hasConstraints: session.has_constraints ?? undefined,
       rpe: session.rpe?.toString() || "",
       comments: session.comments || "",
       coachComments: session.coach_comments || "",
@@ -1336,7 +1336,7 @@ function AdminDashboard() {
                         <input
                           type="radio"
                           name="editCompleted"
-                          checked={editSession.isCompleted}
+                          checked={editSession.isCompleted === true}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
@@ -1352,7 +1352,7 @@ function AdminDashboard() {
                         <input
                           type="radio"
                           name="editCompleted"
-                          checked={!editSession.isCompleted}
+                          checked={editSession.isCompleted === false}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
@@ -1377,7 +1377,7 @@ function AdminDashboard() {
                         <input
                           type="radio"
                           name="editConstraints"
-                          checked={editSession.hasConstraints}
+                          checked={editSession.hasConstraints === true}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
@@ -1393,7 +1393,7 @@ function AdminDashboard() {
                         <input
                           type="radio"
                           name="editConstraints"
-                          checked={!editSession.hasConstraints}
+                          checked={editSession.hasConstraints === false}
                           onChange={() =>
                             setEditSession({
                               ...editSession,
