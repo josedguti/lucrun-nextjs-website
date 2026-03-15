@@ -44,6 +44,7 @@ function ProfileContent() {
     weight: "",
     bodyFatPercentage: "",
     vo2Max: "",
+    vma: "",
     // Running Information
     trainingHoursPerWeek: "",
     runningLevel: "",
@@ -202,6 +203,7 @@ function ProfileContent() {
             weight: profile.weight || "",
             bodyFatPercentage: profile.body_fat_percentage || "",
             vo2Max: profile.vo2_max || "",
+            vma: profile.vma || "",
             trainingHoursPerWeek: profile.training_hours_per_week || "",
             runningLevel: profile.running_level || "",
             currentWeeklyKm: profile.current_weekly_km || "",
@@ -360,6 +362,7 @@ function ProfileContent() {
         weight: formData.weight || null,
         body_fat_percentage: formData.bodyFatPercentage || null,
         vo2_max: formData.vo2Max || null,
+        vma: formData.vma || null,
         training_hours_per_week: formData.trainingHoursPerWeek.trim(),
         running_level: formData.runningLevel.trim(),
         current_weekly_km: formData.currentWeeklyKm.trim(),
@@ -490,6 +493,7 @@ function ProfileContent() {
       weight: "",
       bodyFatPercentage: "",
       vo2Max: "",
+    vma: "",
       // Running Information
       trainingHoursPerWeek: "",
       runningLevel: "",
@@ -1367,6 +1371,33 @@ function ProfileContent() {
                         !isAdmin ? "bg-gray-50 cursor-not-allowed" : ""
                       }`}
                       placeholder="ex : 45.5"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      mesure faite par le coach
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="vma"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      VMA
+                    </label>
+                    <input
+                      type="number"
+                      id="vma"
+                      name="vma"
+                      min="1"
+                      max="100"
+                      step="0.1"
+                      value={formData.vma}
+                      onChange={handleInputChange}
+                      readOnly={!isAdmin}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-gray-900 ${
+                        !isAdmin ? "bg-gray-50 cursor-not-allowed" : ""
+                      }`}
+                      placeholder="ex : 16.5"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       mesure faite par le coach
