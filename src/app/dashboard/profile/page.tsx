@@ -1385,12 +1385,9 @@ function ProfileContent() {
                       VMA
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       id="vma"
                       name="vma"
-                      min="1"
-                      max="100"
-                      step="0.1"
                       value={formData.vma}
                       onChange={handleInputChange}
                       readOnly={!isAdmin}
