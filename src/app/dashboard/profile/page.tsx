@@ -1358,12 +1358,9 @@ function ProfileContent() {
                       VO2 Max
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       id="vo2Max"
                       name="vo2Max"
-                      min="1"
-                      max="100"
-                      step="0.1"
                       value={formData.vo2Max}
                       onChange={handleInputChange}
                       readOnly={!isAdmin}
